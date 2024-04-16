@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 	"projekat/model"
 )
 
@@ -10,8 +11,9 @@ type ConfigInMemRepository struct {
 }
 
 func (c ConfigInMemRepository) GetConfig(name string, version float32) (*model.Config, error) {
-	config, ok := c.configs[name]
-	if !ok {
+	key := fmt.Sprint("%s/%d", name, version)
+	config, err := c.configs[key]
+	if !err {
 		return nil, errors.New("configuration not found")
 	}
 
@@ -24,23 +26,26 @@ func (c ConfigInMemRepository) GetConfig(name string, version float32) (*model.C
 }
 
 func (c ConfigInMemRepository) AddConfig(config *model.Config) error {
-	c.configs[config.Name] = *config
+
+	key := fmt.Sprint("%s/%d", config.Name, config.Version)
+	c.configs[key] = *config
 	return nil
 }
 
-func (c ConfigInMemRepository) DeleteConfig(name string) error {
-	_, ok := c.configs[name]
-	if !ok {
-		return errors.New("configuration not found")
+func (c ConfigInMemRepository) DeleteConfig(name string, version float32) error {
+	key := fmt.Sprint("%s/%d", name, version)
+	_, err := c.configs[key]
+	if !err {
+		return errors.New("configuration does not exist")
 	}
-	delete(c.configs, name)
+	delete(c.configs, key)
 	return nil
 }
 
 // todo: dodaj implementaciju metoda iz interfejsa ConfigRepository
 
-func NewConfigInMemRepository() model.ConfigRepository {
-	return ConfigInMemRepository{
-		configs: make(map[string]model.Config),
-	}
-}
+//func NewConfigInMemRepository() model.ConfigRepository {
+//	return ConfigInMemRepository{
+//		configs: make(map[string]model.Config),
+//	}
+//}
