@@ -28,7 +28,7 @@ func (s ConfigService) GetConfig(name string, version float32) (*model.Config, e
 	return s.repo.GetConfig(name, version)
 }
 
-func (s ConfigService) deleteConfig(name string, version float32) error {
+func (s ConfigService) DeleteConfig(name string, version float32) error {
 	return s.repo.DeleteConfig(name)
 }
 

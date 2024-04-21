@@ -10,18 +10,13 @@ type ConfigInMemRepository struct {
 	configs map[string]model.Config
 }
 
-func (c ConfigInMemRepository) GetConfig(name string, version float32) (*model.Config, error) {
-	key := fmt.Sprint("%s/%d", name, version)
-	config, err := c.configs[key]
-	if !err {
-		return nil, errors.New("configuration not found")
+func (c ConfigInMemRepository) GetConfig(name string, version float32) (model.Config, error) {
+	key := fmt.Sprintf("%s/%d", name, version)
+	config, ok := c.configs[key]
+	if !ok {
+		return model.Config{}, errors.New("config not found")
 	}
-
-	if config.Version != version {
-		return nil, errors.New("configuration version mismatch")
-	}
-
-	return &config, nil
+	return config, nil
 
 }
 
@@ -44,8 +39,8 @@ func (c ConfigInMemRepository) DeleteConfig(name string, version float32) error 
 
 // todo: dodaj implementaciju metoda iz interfejsa ConfigRepository
 
-//func NewConfigInMemRepository() model.ConfigRepository {
-//	return ConfigInMemRepository{
-//		configs: make(map[string]model.Config),
-//	}
-//}
+func NewConfigInMemRepository() ConfigInMemRepository {
+	return ConfigInMemRepository{
+		configs: make(map[string]model.Config),
+	}
+}
