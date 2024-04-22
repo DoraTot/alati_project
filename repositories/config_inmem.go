@@ -11,13 +11,13 @@ type ConfigInMemRepository struct {
 	configGroups map[string][]string
 }
 
-func (c ConfigInMemRepository) GetConfig(name string, version float32) (model.Config, error) {
+func (c ConfigInMemRepository) GetConfig(name string, version float32) (*model.Config, error) {
 	key := fmt.Sprintf("%s/%.2f", name, version)
 	config, ok := c.Configs[key]
 	if !ok {
-		return model.Config{}, errors.New("config not found")
+		return &model.Config{}, errors.New("config not found")
 	}
-	return config, nil
+	return &config, nil
 
 }
 
@@ -34,6 +34,7 @@ func (c ConfigInMemRepository) DeleteConfig(name string, version float32) error 
 		return errors.New("configuration does not exist")
 	}
 	delete(c.Configs, key)
+	fmt.Printf("Deleting configuration: %s\n", key)
 	return nil
 }
 

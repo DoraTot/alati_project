@@ -72,23 +72,6 @@ func (c *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	renderJSON(r.Context(), w, config)
 
-	//	name := mux.Vars(r)["name"]
-	//	version := mux.Vars(r)["version"]
-	//
-	//	versionFloat, err := strconv.ParseFloat(version, 32)
-	//	if err != nil {
-	//		http.Error(w, err.Error(), http.StatusBadRequest)
-	//		return
-	//	}
-	//	config, getError := c.service.GetConfig(name, float32(versionFloat))
-	//
-	//	if getError != nil {
-	//		http.Error(w, getError.Error(), http.StatusNotFound)
-	//		return
-	//	}
-	//
-	//	renderJSON(r.Context(), w, config)
-	//
 }
 
 func (ch *ConfigHandler) CreatePostHandler(w http.ResponseWriter, req *http.Request) {

@@ -24,7 +24,7 @@ func (s ConfigService) AddConfig(name string, version float32, parameters map[st
 	return s.repo.AddConfig(config)
 }
 
-func (s ConfigService) GetConfig(name string, version float32) (model.Config, error) {
+func (s ConfigService) GetConfig(name string, version float32) (*model.Config, error) {
 	return s.repo.GetConfig(name, version)
 }
 

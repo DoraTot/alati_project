@@ -7,32 +7,32 @@ import (
 )
 
 type ConfigGroupInMemRepository struct {
-	configs map[string]model.ConfigGroup
+	Configs map[string]model.ConfigGroup
 }
 
-func (c ConfigGroupInMemRepository) GetConfigGroup(name string, version float32) (model.ConfigGroup, error) {
-	key := fmt.Sprintf("%s/%d", name, version)
-	config, ok := c.configs[key]
+func (c ConfigGroupInMemRepository) GetConfigGroup(name string, version float32) (*model.ConfigGroup, error) {
+	key := fmt.Sprintf("%s/%.2f", name, version)
+	config, ok := c.Configs[key]
 	if !ok {
-		return model.ConfigGroup{}, errors.New("config not found")
+		return nil, fmt.Errorf("configGroup '%s' with version %.2f not found", name, version)
 	}
-	return config, nil
+	return &config, nil
 
 }
 
 func (c ConfigGroupInMemRepository) AddConfigGroup(config *model.ConfigGroup) error {
-	key := fmt.Sprint("%s/%d", config.Name, config.Version)
-	c.configs[key] = *config
+	key := fmt.Sprintf("%s/%.2f", config.Name, config.Version)
+	c.Configs[key] = *config
 	return nil
 }
 
 func (c ConfigGroupInMemRepository) DeleteConfigGroup(name string, version float32) error {
 	key := fmt.Sprint("%s/%d", name, version)
-	_, err := c.configs[key]
+	_, err := c.Configs[key]
 	if !err {
 		return errors.New("configuration group does not exist")
 	}
-	delete(c.configs, key)
+	delete(c.Configs, key)
 	return nil
 }
 
@@ -40,6 +40,6 @@ func (c ConfigGroupInMemRepository) DeleteConfigGroup(name string, version float
 
 func NewConfigGroupInMemRepository() ConfigGroupInMemRepository {
 	return ConfigGroupInMemRepository{
-		configs: make(map[string]model.ConfigGroup),
+		Configs: make(map[string]model.ConfigGroup),
 	}
 }

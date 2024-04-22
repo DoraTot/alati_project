@@ -52,9 +52,17 @@ func main() {
 
 	server := handlers.NewConfigHandler(service)
 
+	repo2 := repositories.ConfigGroupInMemRepository{
+		Configs: make(map[string]model.ConfigGroup),
+	}
+	service2 := services.NewConfigGroupService(repo2)
+	server2 := handlers.NewConfigGroupHandler(service2)
+
 	router.HandleFunc("/config/", server.CreatePostHandler).Methods("POST")
 	router.HandleFunc("/config/{name}/{version}/", server.Get).Methods("GET")
 	router.HandleFunc("/config/{name}/{version}/", server.DelPostHandler).Methods("DELETE")
+	router.HandleFunc("/configGroup/", server2.CreateConfigGroup).Methods("POST")
+	router.HandleFunc("/configGroup/{name}/{version}/", server2.GetConfigGroup).Methods("GET")
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",

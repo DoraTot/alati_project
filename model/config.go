@@ -20,7 +20,7 @@ func NewConfig(name string, version float32, parameters map[string]string) *Conf
 type ConfigRepository interface {
 	// todo: dodati metode
 
-	GetConfig(name string, version float32) (Config, error)
+	GetConfig(name string, version float32) (*Config, error)
 	AddConfig(config *Config) error
 	DeleteConfig(name string, version float32) error
 	AddToConfigGroup(config *Config, groupName string) error
