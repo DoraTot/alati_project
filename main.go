@@ -17,7 +17,9 @@ import (
 )
 
 func main() {
-	repo := repositories.NewConfigConsulRepository()
+	//repo := repositories.NewConfigConsulRepository() // Ovo koristiti kad budemo radili sa bazom
+	//service := services.NewConfigService(repo)
+	repo := repositories.NewConfigInMemRepository()
 	service := services.NewConfigService(repo)
 	service.Hello()
 	params := make(map[string]string)
@@ -46,7 +48,6 @@ func main() {
 	}
 
 	go func() {
-		log.Println("Server starting")
 		if err := srv.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err)

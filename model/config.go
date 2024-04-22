@@ -23,4 +23,6 @@ type ConfigRepository interface {
 	GetConfig(name string, version float32) (*Config, error)
 	AddConfig(config *Config) error
 	DeleteConfig(name string) error
+	AddToConfigGroup(config *Config, groupName string) error
+	DeleteFromConfigGroup(config *Config, groupName string) error
 }

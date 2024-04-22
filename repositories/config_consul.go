@@ -10,13 +10,18 @@ func (c ConfigConsulRepository) GetConfig(name string, version float32) (*model.
 	panic("implement me")
 }
 
-func (c ConfigConsulRepository) AddConfig(config *model.Config) error {
+func (c ConfigConsulRepository) AddConfig(config *model.Config) error { panic("implement me") }
+
+func (c ConfigConsulRepository) DeleteConfig(name string) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (c ConfigConsulRepository) DeleteConfig(name string) error {
-	//TODO implement me
+func (c ConfigConsulRepository) AddToConfigGroup(config *model.Config, groupName string) error {
+	panic("implement me")
+}
+
+func (c ConfigConsulRepository) DeleteFromConfigGroup(config *model.Config, groupName string) error {
 	panic("implement me")
 }
 
