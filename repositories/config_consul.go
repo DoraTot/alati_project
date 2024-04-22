@@ -5,14 +5,14 @@ import "projekat/model"
 type ConfigConsulRepository struct {
 }
 
-func (c ConfigConsulRepository) GetConfig(name string, version float32) (*model.Config, error) {
+func (c ConfigConsulRepository) GetConfig(name string, version float32) (model.Config, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
 func (c ConfigConsulRepository) AddConfig(config *model.Config) error { panic("implement me") }
 
-func (c ConfigConsulRepository) DeleteConfig(name string) error {
+func (c ConfigConsulRepository) DeleteConfig(name string, version float32) error {
 	//TODO implement me
 	panic("implement me")
 }

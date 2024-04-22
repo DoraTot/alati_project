@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -19,17 +20,30 @@ import (
 func main() {
 	//repo := repositories.NewConfigConsulRepository() // Ovo koristiti kad budemo radili sa bazom
 	//service := services.NewConfigService(repo)
-	repo := repositories.NewConfigInMemRepository()
+	repo := repositories.ConfigInMemRepository{
+		Configs: make(map[string]model.Config),
+	}
 	service := services.NewConfigService(repo)
 	service.Hello()
 	params := make(map[string]string)
 	params["username"] = "pera"
 	params["password"] = "pera"
-	configs := model.NewConfig("db_config", 2, params)
+	configs := model.NewConfig("db_config", 2.0, params)
 	err := service.AddConfig(configs.Name, configs.Version, configs.Parameters)
 	if err != nil {
 		return
 	}
+
+	//For testing
+	name := "db_config"
+	version := float32(2.0)
+	config, err := repo.GetConfig(name, version)
+	if err != nil {
+		fmt.Println("Error:", err)
+	} else {
+		fmt.Println("Config:", config)
+	}
+
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 

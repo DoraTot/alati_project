@@ -11,6 +11,7 @@ import (
 	"projekat/model"
 	"projekat/services"
 	"strconv"
+	"strings"
 )
 
 type ConfigHandler struct {
@@ -47,24 +48,47 @@ func renderJSON(ctx context.Context, w http.ResponseWriter, v interface{}) {
 	}
 }
 
-func (c ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (c *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	versionFloat, err := strconv.ParseFloat(version, 32)
+	versionFloat, err := strconv.ParseFloat(version, 64) // ParseFloat returns float64
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid version number", http.StatusBadRequest)
 		return
 	}
-	config, getError := c.service.GetConfig(name, float32(versionFloat))
+	// Convert float64 to float32
+	version32 := float32(versionFloat)
 
-	if getError != nil {
-		http.Error(w, getError.Error(), http.StatusNotFound)
+	config, err := c.service.GetConfig(name, version32)
+	if err != nil {
+		if strings.Contains(err.Error(), "config not found") {
+			http.Error(w, "Configuration not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to retrieve configuration", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	renderJSON(r.Context(), w, config)
 
+	//	name := mux.Vars(r)["name"]
+	//	version := mux.Vars(r)["version"]
+	//
+	//	versionFloat, err := strconv.ParseFloat(version, 32)
+	//	if err != nil {
+	//		http.Error(w, err.Error(), http.StatusBadRequest)
+	//		return
+	//	}
+	//	config, getError := c.service.GetConfig(name, float32(versionFloat))
+	//
+	//	if getError != nil {
+	//		http.Error(w, getError.Error(), http.StatusNotFound)
+	//		return
+	//	}
+	//
+	//	renderJSON(r.Context(), w, config)
+	//
 }
 
 func (ch *ConfigHandler) CreatePostHandler(w http.ResponseWriter, req *http.Request) {
@@ -95,13 +119,14 @@ func (ch *ConfigHandler) CreatePostHandler(w http.ResponseWriter, req *http.Requ
 func (ch *ConfigHandler) DelPostHandler(w http.ResponseWriter, req *http.Request) {
 	name := mux.Vars(req)["name"]
 	version := mux.Vars(req)["version"]
-	versionFloat, err := strconv.ParseFloat(version, 32)
+	versionFloat, err := strconv.ParseFloat(version, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	version32 := float32(versionFloat)
 
-	config, err := ch.service.GetConfig(name, float32(versionFloat))
+	config, err := ch.service.GetConfig(name, version32)
 	if err != nil {
 		http.Error(w, "Configuration not found: "+err.Error(), http.StatusNotFound)
 		return
