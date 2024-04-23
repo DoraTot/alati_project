@@ -59,7 +59,7 @@ func main() {
 	router.HandleFunc("/configGroup/", server2.CreateConfigGroup).Methods("POST")
 	router.HandleFunc("/configGroup/{name}/{version}/", server2.GetConfigGroup).Methods("GET")
 	router.HandleFunc("/configGroup/{name}/{version}/", server2.DeleteConfigGroup).Methods("DELETE")
-	router.HandleFunc("/config/{name}/{version}/{groupName}/{groupVersion}/", server.AddToConfigGroup).Methods("POST")
+	router.HandleFunc("/config/configGroup/", server.AddToConfigGroup).Methods("POST")
 	router.HandleFunc("/config/{name}/{version}/{groupName}/{groupVersion}/", server.DeleteFromConfigGroup).Methods("DELETE")
 
 	srv := &http.Server{

@@ -18,6 +18,11 @@ type ConfigHandler struct {
 	service services.ConfigService
 }
 
+type AddToGroupRequest struct {
+	Config      model.Config      `json:"config"`
+	ConfigGroup model.ConfigGroup `json:"configGroup"`
+}
+
 func NewConfigHandler(service services.ConfigService) ConfigHandler {
 	return ConfigHandler{
 		service: service,
@@ -126,39 +131,38 @@ func (ch *ConfigHandler) DelPostHandler(w http.ResponseWriter, req *http.Request
 }
 
 func (ch *ConfigHandler) AddToConfigGroup(w http.ResponseWriter, req *http.Request) {
-	name := mux.Vars(req)["name"]
-	version := mux.Vars(req)["version"]
-	groupName := mux.Vars(req)["groupName"]
-	groupVersion := mux.Vars(req)["groupVersion"]
-
-	versionFloat, err := strconv.ParseFloat(version, 64)
+	contentType := req.Header.Get("Content-Type")
+	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	version32 := float32(versionFloat)
+	if mediaType != "application/json" {
+		err := errors.New("expect application/json Content-Type")
+		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
+		return
+	}
 
-	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
+	var addToGroupReq AddToGroupRequest
+	err = json.NewDecoder(req.Body).Decode(&addToGroupReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	groupVersion32 := float32(versionFloat1)
 
-	config, err := ch.service.GetConfig(name, version32)
+	config, err := ch.service.GetConfig(addToGroupReq.Config.Name, addToGroupReq.Config.Version)
 	if err != nil {
 		http.Error(w, "Configuration not found: "+err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err = ch.service.AddToConfigGroup(config, groupName, groupVersion32)
+	err = ch.service.AddToConfigGroup(config, addToGroupReq.ConfigGroup.Name, addToGroupReq.ConfigGroup.Version)
 	if err != nil {
 		http.Error(w, "Failed to add configuration to configuration group: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	renderJSON(req.Context(), w, map[string]string{"message": "Configuration added to group successfully"})
-
 }
 
 func (ch *ConfigHandler) DeleteFromConfigGroup(w http.ResponseWriter, req *http.Request) {
