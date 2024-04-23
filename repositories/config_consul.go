@@ -17,11 +17,11 @@ func (c ConfigConsulRepository) DeleteConfig(name string, version float32) error
 	panic("implement me")
 }
 
-func (c ConfigConsulRepository) AddToConfigGroup(config *model.Config, groupName string) error {
+func (c ConfigConsulRepository) AddToConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
 	panic("implement me")
 }
 
-func (c ConfigConsulRepository) DeleteFromConfigGroup(config *model.Config, groupName string) error {
+func (c ConfigConsulRepository) DeleteFromConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
 	panic("implement me")
 }
 

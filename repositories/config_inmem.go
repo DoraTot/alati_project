@@ -8,7 +8,7 @@ import (
 
 type ConfigInMemRepository struct {
 	Configs      map[string]model.Config
-	configGroups map[string][]string
+	ConfigGroups *ConfigGroupInMemRepository
 }
 
 func (c ConfigInMemRepository) GetConfig(name string, version float32) (*model.Config, error) {
@@ -38,50 +38,63 @@ func (c ConfigInMemRepository) DeleteConfig(name string, version float32) error 
 	return nil
 }
 
-func (c ConfigInMemRepository) AddToConfigGroup(config *model.Config, groupName string) error {
-	key := fmt.Sprintf("%s/%f", config.Name, config.Version)
+func (c ConfigInMemRepository) AddToConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
+	key := fmt.Sprintf("%s/%.2f", config.Name, config.Version)
 	_, ok := c.Configs[key]
 	if !ok {
 		return errors.New("configuration does not exist")
 	}
 
-	// Add the configuration to the specified group
-	if _, groupExists := c.configGroups[groupName]; !groupExists {
-		c.configGroups[groupName] = []string{key}
-	} else {
-		c.configGroups[groupName] = append(c.configGroups[groupName], key)
+	group, err := c.ConfigGroups.GetConfigGroup(groupName, groupVersion)
+	if err != nil {
+		return err // Error fetching the group
 	}
+	if group == nil {
+		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
+	}
+	group.Configurations = append(group.Configurations, *config)
+
 	return nil
 }
 
-func (c ConfigInMemRepository) DeleteFromConfigGroup(config *model.Config, groupName string) error {
-	groupConfigs, ok := c.configGroups[groupName]
+func (c ConfigInMemRepository) DeleteFromConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
+	key := fmt.Sprintf("%s/%.2f", config.Name, config.Version)
+	_, ok := c.Configs[key]
 	if !ok {
-		return errors.New("group does not exist")
+		return errors.New("configuration does not exist")
 	}
 
-	// Find and remove the configuration from the group
-	key := fmt.Sprintf("%s/%f", config.Name, config.Version)
+	group, err := c.ConfigGroups.GetConfigGroup(groupName, groupVersion)
+	if err != nil {
+		return err // Error fetching the group
+	}
+	if group == nil {
+		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
+	}
+
 	found := false
-	for i, configKey := range groupConfigs {
-		if configKey == key {
-			// Remove the config key from the group slice
-			c.configGroups[groupName] = append(groupConfigs[:i], groupConfigs[i+1:]...)
+	index := -1
+	for i, configFromGroup := range group.Configurations {
+		if configFromGroup.Name == config.Name && configFromGroup.Version == config.Version {
+			index = i
 			found = true
 			break
 		}
 	}
-	if !found {
-		return errors.New("configuration not found in the specified group")
+
+	if found {
+		group.Configurations = append(group.Configurations[:index], group.Configurations[index+1:]...)
+		return nil
 	}
-	return nil
+
+	return errors.New("configuration not found in the specified group")
 }
 
 // todo: dodaj implementaciju metoda iz interfejsa ConfigRepository
 
-func NewConfigInMemRepository() ConfigInMemRepository {
-	return ConfigInMemRepository{
+func NewConfigInMemRepository(groupRepo *ConfigGroupInMemRepository) *ConfigInMemRepository {
+	return &ConfigInMemRepository{
 		Configs:      make(map[string]model.Config),
-		configGroups: make(map[string][]string),
+		ConfigGroups: groupRepo, // Assuming ConfigGroups should point to an instance of ConfigGroupInMemRepository
 	}
 }

@@ -66,14 +66,39 @@ func (c *ConfigGroupHandler) GetConfigGroup(w http.ResponseWriter, r *http.Reque
 
 	config, err := c.service.GetConfigGroup(name, version32)
 	if err != nil {
-		if strings.Contains(err.Error(), "config not found") {
-			http.Error(w, "Configuration not found", http.StatusNotFound)
+		if strings.Contains(err.Error(), "config group not found") {
+			http.Error(w, "Configuration group not found", http.StatusNotFound)
 		} else {
-			http.Error(w, "Failed to retrieve configuration", http.StatusInternalServerError)
+			http.Error(w, "Failed to retrieve configuration group", http.StatusInternalServerError)
 		}
 		return
 	}
 
 	renderJSON(r.Context(), w, config)
 
+}
+
+func (ch *ConfigGroupHandler) DeleteConfigGroup(w http.ResponseWriter, req *http.Request) {
+	name := mux.Vars(req)["name"]
+	version := mux.Vars(req)["version"]
+	versionFloat, err := strconv.ParseFloat(version, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	version32 := float32(versionFloat)
+
+	configGroup, err := ch.service.GetConfigGroup(name, version32)
+	if err != nil {
+		http.Error(w, "Configuration group not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = ch.service.DeleteConfigGroup(configGroup.Name, configGroup.Version)
+	if err != nil {
+		http.Error(w, "Failed to delete configuration group: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	renderJSON(req.Context(), w, map[string]string{"message": "Configuration group deleted successfully"})
 }

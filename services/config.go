@@ -32,13 +32,12 @@ func (s ConfigService) DeleteConfig(name string, version float32) error {
 	return s.repo.DeleteConfig(name, version)
 }
 
-func (s ConfigService) AddToConfigGroup(config *model.Config, groupName string) error {
-	return s.repo.AddToConfigGroup(config, groupName)
-
+func (s ConfigService) AddToConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
+	return s.repo.AddToConfigGroup(config, groupName, groupVersion)
 }
 
-func (s ConfigService) DeleteFromConfigGroup(config *model.Config, groupName string) error {
-	return s.repo.AddToConfigGroup(config, groupName)
+func (s ConfigService) DeleteFromConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
+	return s.repo.DeleteFromConfigGroup(config, groupName, groupVersion)
 
 }
 

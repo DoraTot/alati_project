@@ -124,3 +124,75 @@ func (ch *ConfigHandler) DelPostHandler(w http.ResponseWriter, req *http.Request
 	renderJSON(req.Context(), w, map[string]string{"message": "Configuration deleted successfully"})
 
 }
+
+func (ch *ConfigHandler) AddToConfigGroup(w http.ResponseWriter, req *http.Request) {
+	name := mux.Vars(req)["name"]
+	version := mux.Vars(req)["version"]
+	groupName := mux.Vars(req)["groupName"]
+	groupVersion := mux.Vars(req)["groupVersion"]
+
+	versionFloat, err := strconv.ParseFloat(version, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	version32 := float32(versionFloat)
+
+	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	groupVersion32 := float32(versionFloat1)
+
+	config, err := ch.service.GetConfig(name, version32)
+	if err != nil {
+		http.Error(w, "Configuration not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = ch.service.AddToConfigGroup(config, groupName, groupVersion32)
+	if err != nil {
+		http.Error(w, "Failed to add configuration to configuration group: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	renderJSON(req.Context(), w, map[string]string{"message": "Configuration added to group successfully"})
+
+}
+
+func (ch *ConfigHandler) DeleteFromConfigGroup(w http.ResponseWriter, req *http.Request) {
+	name := mux.Vars(req)["name"]
+	version := mux.Vars(req)["version"]
+	groupName := mux.Vars(req)["groupName"]
+	groupVersion := mux.Vars(req)["groupVersion"]
+
+	versionFloat, err := strconv.ParseFloat(version, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	version32 := float32(versionFloat)
+
+	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	groupVersion32 := float32(versionFloat1)
+
+	config, err := ch.service.GetConfig(name, version32)
+	if err != nil {
+		http.Error(w, "Configuration not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = ch.service.DeleteFromConfigGroup(config, groupName, groupVersion32)
+	if err != nil {
+		http.Error(w, "Failed to delete configuration from configuration group: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	renderJSON(req.Context(), w, map[string]string{"message": "Configuration deleted from group successfully"})
+
+}

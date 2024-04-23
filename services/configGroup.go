@@ -28,6 +28,6 @@ func (s ConfigGroupService) GetConfigGroup(name string, version float32) (*model
 	return s.repo.GetConfigGroup(name, version)
 }
 
-func (s ConfigGroupService) deleteConfigGroup(name string, version float32) error {
+func (s ConfigGroupService) DeleteConfigGroup(name string, version float32) error {
 	return s.repo.DeleteConfigGroup(name, version)
 }
