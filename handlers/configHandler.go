@@ -19,8 +19,16 @@ type ConfigHandler struct {
 }
 
 type AddToGroupRequest struct {
-	Config      model.Config      `json:"config"`
-	ConfigGroup model.ConfigGroup `json:"configGroup"`
+	Config struct {
+		Name       string            `json:"name"`
+		Version    float32           `json:"version"`
+		Parameters map[string]string `json:"parameters"`
+	} `json:"config"`
+	ConfigGroup struct {
+		Name           string         `json:"name"`
+		Version        float32        `json:"version"`
+		Configurations []model.Config `json:"configurations"`
+	} `json:"configGroup"`
 }
 
 func NewConfigHandler(service services.ConfigService) ConfigHandler {
