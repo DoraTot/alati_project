@@ -1,9 +1,9 @@
 package model
 
 type ConfigGroup struct {
-	Name           string   `json:"name"`
-	Version        float32  `json:"version"`
-	Configurations []Config `json:"configurations"`
+	Name           string
+	Version        float32
+	Configurations []Config
 }
 
 func NewConfigGroup(name string, version float32, configurations []Config) *ConfigGroup {
