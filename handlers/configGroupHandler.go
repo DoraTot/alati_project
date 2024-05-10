@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"mime"
@@ -66,7 +67,8 @@ func (c *ConfigGroupHandler) GetConfigGroup(w http.ResponseWriter, r *http.Reque
 
 	config, err := c.service.GetConfigGroup(name, version32)
 	if err != nil {
-		if strings.Contains(err.Error(), "config group not found") {
+		errMsg := fmt.Sprintf("configGroup '%s' with version %.2f not found", name, version)
+		if strings.Contains(err.Error(), errMsg) {
 			http.Error(w, "Configuration group not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Failed to retrieve configuration group", http.StatusInternalServerError)
