@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"golang.org/x/time/rate"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"projekat/handlers"
+	"projekat/middleware"
 	"projekat/model"
 	"projekat/repositories"
 	"projekat/services"
@@ -32,7 +34,7 @@ func main() {
 		return
 	}
 
-	//For testing
+	var limiter = rate.NewLimiter(0.167, 10) //For testing
 	name := "db_config"
 	version := float32(2.0)
 	config, err := repo.GetConfig(name, version)
@@ -53,14 +55,14 @@ func main() {
 	service2 := services.NewConfigGroupService(repo2)
 	server2 := handlers.NewConfigGroupHandler(service2)
 
-	router.HandleFunc("/config/", server.CreatePostHandler).Methods("POST")
-	router.HandleFunc("/config/{name}/{version}/", server.Get).Methods("GET")
-	router.HandleFunc("/config/{name}/{version}/", server.DelPostHandler).Methods("DELETE")
-	router.HandleFunc("/configGroup/", server2.CreateConfigGroup).Methods("POST")
-	router.HandleFunc("/configGroup/{name}/{version}/", server2.GetConfigGroup).Methods("GET")
-	router.HandleFunc("/configGroup/{name}/{version}/", server2.DeleteConfigGroup).Methods("DELETE")
-	router.HandleFunc("/config/configGroup/", server.AddToConfigGroup).Methods("POST")
-	router.HandleFunc("/config/{name}/{version}/{groupName}/{groupVersion}/", server.DeleteFromConfigGroup).Methods("DELETE")
+	router.Handle("/config/", middleware.RateLimit(limiter, server.CreatePostHandler)).Methods("POST")
+	router.Handle("/config/{name}/{version}/", middleware.RateLimit(limiter, server.Get)).Methods("GET")
+	router.Handle("/config/{name}/{version}/", middleware.RateLimit(limiter, server.DelPostHandler)).Methods("DELETE")
+	router.Handle("/configGroup/", middleware.RateLimit(limiter, server2.CreateConfigGroup)).Methods("POST")
+	router.Handle("/configGroup/{name}/{version}/", middleware.RateLimit(limiter, server2.GetConfigGroup)).Methods("GET")
+	router.Handle("/configGroup/{name}/{version}/", middleware.RateLimit(limiter, server2.DeleteConfigGroup)).Methods("DELETE")
+	router.Handle("/config/configGroup/", middleware.RateLimit(limiter, server.AddToConfigGroup)).Methods("POST")
+	router.Handle("/config/{name}/{version}/{groupName}/{groupVersion}/", middleware.RateLimit(limiter, server.DeleteFromConfigGroup)).Methods("DELETE")
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
