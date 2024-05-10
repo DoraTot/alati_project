@@ -28,17 +28,8 @@ func (s ConfigService) GetConfig(name string, version float32) (*model.Config, e
 	return s.repo.GetConfig(name, version)
 }
 
-func (s ConfigService) DeleteConfig(name string, version float32) error {
-	return s.repo.DeleteConfig(name, version)
-}
-
-func (s ConfigService) AddToConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
-	return s.repo.AddToConfigGroup(config, groupName, groupVersion)
-}
-
-func (s ConfigService) DeleteFromConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
-	return s.repo.DeleteFromConfigGroup(config, groupName, groupVersion)
-
+func (s ConfigService) deleteConfig(name string, version float32) error {
+	return s.repo.DeleteConfig(name)
 }
 
 // todo: implementiraj metode za dodavanje, brisanje, dobavljanje itd.

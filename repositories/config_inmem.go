@@ -2,99 +2,45 @@ package repositories
 
 import (
 	"errors"
-	"fmt"
 	"projekat/model"
 )
 
 type ConfigInMemRepository struct {
-	Configs      map[string]model.Config
-	ConfigGroups *ConfigGroupInMemRepository
+	configs map[string]model.Config
 }
 
 func (c ConfigInMemRepository) GetConfig(name string, version float32) (*model.Config, error) {
-	key := fmt.Sprintf("%s/%.2f", name, version)
-	config, ok := c.Configs[key]
+	config, ok := c.configs[name]
 	if !ok {
-		return &model.Config{}, errors.New("config not found")
+		return nil, errors.New("configuration not found")
 	}
+
+	if config.Version != version {
+		return nil, errors.New("configuration version mismatch")
+	}
+
 	return &config, nil
 
 }
 
 func (c ConfigInMemRepository) AddConfig(config *model.Config) error {
-
-	key := fmt.Sprintf("%s/%.2f", config.Name, config.Version)
-	c.Configs[key] = *config
+	c.configs[config.Name] = *config
 	return nil
 }
 
-func (c ConfigInMemRepository) DeleteConfig(name string, version float32) error {
-	key := fmt.Sprintf("%s/%.2f", name, version)
-	if _, ok := c.Configs[key]; !ok {
-		return errors.New("configuration does not exist")
-	}
-	delete(c.Configs, key)
-	fmt.Printf("Deleting configuration: %s\n", key)
-	return nil
-}
-
-func (c ConfigInMemRepository) AddToConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
-	key := fmt.Sprintf("%s/%.2f", config.Name, config.Version)
-	_, ok := c.Configs[key]
+func (c ConfigInMemRepository) DeleteConfig(name string) error {
+	_, ok := c.configs[name]
 	if !ok {
-		return errors.New("configuration does not exist")
+		return errors.New("configuration not found")
 	}
-
-	group, err := c.ConfigGroups.GetConfigGroup(groupName, groupVersion)
-	if err != nil {
-		return err // Error fetching the group
-	}
-	if group == nil {
-		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
-	}
-	group.Configurations = append(group.Configurations, *config)
-
+	delete(c.configs, name)
 	return nil
-}
-
-func (c ConfigInMemRepository) DeleteFromConfigGroup(config *model.Config, groupName string, groupVersion float32) error {
-	key := fmt.Sprintf("%s/%.2f", config.Name, config.Version)
-	_, ok := c.Configs[key]
-	if !ok {
-		return errors.New("configuration does not exist")
-	}
-
-	group, err := c.ConfigGroups.GetConfigGroup(groupName, groupVersion)
-	if err != nil {
-		return err // Error fetching the group
-	}
-	if group == nil {
-		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
-	}
-
-	found := false
-	index := -1
-	for i, configFromGroup := range group.Configurations {
-		if configFromGroup.Name == config.Name && configFromGroup.Version == config.Version {
-			index = i
-			found = true
-			break
-		}
-	}
-
-	if found {
-		group.Configurations = append(group.Configurations[:index], group.Configurations[index+1:]...)
-		return nil
-	}
-
-	return errors.New("configuration not found in the specified group")
 }
 
 // todo: dodaj implementaciju metoda iz interfejsa ConfigRepository
 
-func NewConfigInMemRepository(groupRepo *ConfigGroupInMemRepository) *ConfigInMemRepository {
-	return &ConfigInMemRepository{
-		Configs:      make(map[string]model.Config),
-		ConfigGroups: groupRepo, // Assuming ConfigGroups should point to an instance of ConfigGroupInMemRepository
+func NewConfigInMemRepository() model.ConfigRepository {
+	return ConfigInMemRepository{
+		configs: make(map[string]model.Config),
 	}
 }
