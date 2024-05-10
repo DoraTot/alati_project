@@ -2,9 +2,9 @@ package model
 
 type Config struct {
 	// todo: dodati atribute
-	Name       string
-	Version    float32
-	Parameters map[string]string
+	Name       string            `json:"name"`
+	Version    float32           `json:"version"`
+	Parameters map[string]string `json:"parameters"`
 }
 
 // todo: dodati metode
@@ -22,5 +22,7 @@ type ConfigRepository interface {
 
 	GetConfig(name string, version float32) (*Config, error)
 	AddConfig(config *Config) error
-	DeleteConfig(name string) error
+	DeleteConfig(name string, version float32) error
+	AddToConfigGroup(config *Config, groupName string, groupVersion float32) error
+	DeleteFromConfigGroup(config *Config, groupName string, groupVersion float32) error
 }
