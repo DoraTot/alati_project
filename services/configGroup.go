@@ -19,7 +19,7 @@ func (s ConfigGroupService) Hello() {
 	fmt.Println("hello from config group service")
 }
 
-func (s ConfigGroupService) AddConfigGroup(name string, version float32, configurations []model.Config) error {
+func (s ConfigGroupService) AddConfigGroup(name string, version float32, configurations []model.ConfigForGroup) error {
 	config := model.NewConfigGroup(name, version, configurations)
 	return s.repo.AddConfigGroup(config)
 }
