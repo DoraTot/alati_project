@@ -52,7 +52,17 @@ func (c ConfigInMemRepository) AddToConfigGroup(config *model.Config, groupName 
 	if group == nil {
 		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
 	}
-	group.Configurations = append(group.Configurations, *config)
+	labels := map[string]string{
+		"version": fmt.Sprintf("%.0f", config.Version),
+	}
+
+	configForGroup := &model.ConfigForGroup{
+		Labels:     labels,
+		Name:       config.Name,
+		Parameters: config.Parameters,
+	}
+
+	group.Configurations = append(group.Configurations, *configForGroup)
 
 	return nil
 }
@@ -75,7 +85,7 @@ func (c ConfigInMemRepository) DeleteFromConfigGroup(config *model.Config, group
 	found := false
 	index := -1
 	for i, configFromGroup := range group.Configurations {
-		if configFromGroup.Name == config.Name && configFromGroup.Version == config.Version {
+		if configFromGroup.Name == config.Name && configFromGroup.Labels["version"] == fmt.Sprintf("%.2f", config.Version) {
 			index = i
 			found = true
 			break

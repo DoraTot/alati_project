@@ -20,15 +20,15 @@ type ConfigHandler struct {
 }
 
 type AddToGroupRequest struct {
-	Config struct {
+	ConfigForGroup struct {
 		Name       string            `json:"name"`
 		Version    float32           `json:"version"`
 		Parameters map[string]string `json:"parameters"`
 	} `json:"config"`
 	ConfigGroup struct {
-		Name           string         `json:"name"`
-		Version        float32        `json:"version"`
-		Configurations []model.Config `json:"configurations"`
+		Name           string                 `json:"name"`
+		Version        float32                `json:"version"`
+		Configurations []model.ConfigForGroup `json:"configurations"`
 	} `json:"configGroup"`
 }
 
@@ -160,7 +160,7 @@ func (ch *ConfigHandler) AddToConfigGroup(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	config, err := ch.service.GetConfig(addToGroupReq.Config.Name, addToGroupReq.Config.Version)
+	config, err := ch.service.GetConfig(addToGroupReq.ConfigForGroup.Name, addToGroupReq.ConfigForGroup.Version)
 	if err != nil {
 		http.Error(w, "Configuration not found: "+err.Error(), http.StatusNotFound)
 		return
