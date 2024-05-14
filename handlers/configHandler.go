@@ -12,7 +12,6 @@ import (
 	"projekat/services"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type ConfigHandler struct {
@@ -50,7 +49,7 @@ func renderJSON(ctx context.Context, w http.ResponseWriter, v interface{}) {
 }
 
 func (c *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(20 * time.Second)
+
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
