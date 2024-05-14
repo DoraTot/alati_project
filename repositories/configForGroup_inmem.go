@@ -72,6 +72,47 @@ func (c ConfigForGroupInMemRepository) DeleteFromConfigGroup(configForGroupName 
 	return errors.New("configuration not found in the specified group")
 }
 
+func (c ConfigForGroupInMemRepository) GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]model.ConfigForGroup, error) {
+	group, err := c.ConfigGroups.GetConfigGroup(groupName, groupVersion)
+	if err != nil {
+		return nil, err
+	}
+	if group == nil {
+		return nil, fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
+	}
+
+	var matchingConfigs []model.ConfigForGroup
+
+	// Iterate through configurations in the group
+	for _, config := range group.Configurations {
+		// Check if the labels match
+		if labelsMatch(config.Labels, labels) {
+			// If labels match, add the configuration to the result
+			matchingConfigs = append(matchingConfigs, config)
+		}
+	}
+	fmt.Println(matchingConfigs)
+	return matchingConfigs, nil
+}
+
+func labelsMatch(configLabels map[string]string, targetLabels map[string]string) bool {
+	// Iterate through targetLabels and check if each key-value pair exists in configLabels
+	for key, value := range targetLabels {
+		// If the key doesn't exist in the configuration labels or the values don't match, return false
+		configValue, ok := configLabels[key]
+		if !ok || configValue != value {
+			return false
+		}
+	}
+
+	// If all target labels are present and match, return true
+	return true
+}
+
+func (c ConfigForGroupInMemRepository) DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) error {
+	return nil
+}
+
 func NewConfigForGroupInMemRepository(groupRepo *ConfigGroupInMemRepository) *ConfigForGroupInMemRepository {
 	return &ConfigForGroupInMemRepository{
 		Configs:      make(map[string]model.ConfigForGroup),

@@ -21,3 +21,7 @@ func (s ConfigForGroupService) DeleteFromConfigGroup(configForGroupName string, 
 	return s.repo.DeleteFromConfigGroup(configForGroupName, groupName, groupVersion)
 
 }
+
+func (s ConfigForGroupService) GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]model.ConfigForGroup, error) {
+	return s.repo.GetConfigsByLabels(groupName, groupVersion, labels)
+}

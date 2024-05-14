@@ -19,4 +19,6 @@ func NewConfigForGroup(name string, labels map[string]string, parameters map[str
 type ConfigForGroupRepository interface {
 	AddToConfigGroup(config *ConfigForGroup, groupName string, groupVersion float32) error
 	DeleteFromConfigGroup(ConfigForGroupName string, groupName string, groupVersion float32) error
+	GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]ConfigForGroup, error)
+	DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) error
 }

@@ -11,6 +11,7 @@ import (
 	"projekat/model"
 	"projekat/services"
 	"strconv"
+	"strings"
 )
 
 type ConfigForGroupHandler struct {
@@ -109,5 +110,41 @@ func (ch *ConfigForGroupHandler) DeleteFromConfigGroup(w http.ResponseWriter, re
 	}
 
 	renderer(req.Context(), w, map[string]string{"message": "Configuration deleted from group successfully"})
+
+}
+
+func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *http.Request) {
+	groupName := mux.Vars(req)["groupName"]
+	groupVersion := mux.Vars(req)["groupVersion"]
+	labels := mux.Vars(req)["labels"]
+
+	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	groupVersion32 := float32(versionFloat1)
+
+	labelMap := make(map[string]string)
+	for _, label := range strings.Split(labels, ",") {
+		parts := strings.SplitN(label, ":", 2)
+		if len(parts) == 2 {
+			labelMap[parts[0]] = parts[1]
+		}
+	}
+
+	// Call the service method to get configurations by labels
+	configs, err := ch.service.GetConfigsByLabels(groupName, groupVersion32, labelMap)
+	if err != nil {
+		http.Error(w, "Failed to get configurations by labels from configuration group: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	configMap := make(map[string]interface{})
+	for _, config := range configs {
+		configMap[config.Name] = config
+	}
+
+	renderer(req.Context(), w, configMap)
 
 }

@@ -70,7 +70,7 @@ func main() {
 	router.Handle("/config/{name}/{groupName}/{groupVersion}/", middleware.RateLimit(limiter, server1.DeleteFromConfigGroup)).Methods("DELETE")
 
 	//router.HandleFunc("/configGroup/{name}/{version}/{labels}", server1.DeleteConfigsByLabels).Methods("DELETE")
-	//router.HandleFunc("/configGroup/{name}/{version}/{labels}", server1.GetConfigsByLabels).Methods("GET")
+	router.HandleFunc("/configGroup/{groupName}/{groupVersion}/{labels}", server1.GetConfigsByLabels).Methods("GET")
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
