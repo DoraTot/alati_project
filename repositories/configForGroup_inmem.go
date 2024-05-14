@@ -104,13 +104,37 @@ func labelsMatch(configLabels map[string]string, targetLabels map[string]string)
 			return false
 		}
 	}
-
 	// If all target labels are present and match, return true
 	return true
 }
 
 func (c ConfigForGroupInMemRepository) DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) error {
-	return nil
+	group, err := c.ConfigGroups.GetConfigGroup(groupName, groupVersion)
+	if err != nil {
+		return err
+	}
+	if group == nil {
+		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
+	}
+
+	labelsFound := false
+	indicesToDelete := []int{}
+	for i, config := range group.Configurations {
+		if labelsMatch(config.Labels, labels) {
+			indicesToDelete = append(indicesToDelete, i)
+			labelsFound = true
+		}
+	}
+
+	// Delete configurations starting from the end to avoid index shifting
+	for i := len(indicesToDelete) - 1; i >= 0; i-- {
+		index := indicesToDelete[i]
+		group.Configurations = append(group.Configurations[:index], group.Configurations[index+1:]...)
+	}
+	if labelsFound == true {
+		return nil
+	}
+	return errors.New("labels not found")
 }
 
 func NewConfigForGroupInMemRepository(groupRepo *ConfigGroupInMemRepository) *ConfigForGroupInMemRepository {

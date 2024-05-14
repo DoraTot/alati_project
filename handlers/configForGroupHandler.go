@@ -146,5 +146,32 @@ func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *
 	}
 
 	renderer(req.Context(), w, configMap)
+}
 
+func (ch *ConfigForGroupHandler) DeleteConfigsByLabels(w http.ResponseWriter, req *http.Request) {
+	groupName := mux.Vars(req)["groupName"]
+	groupVersion := mux.Vars(req)["groupVersion"]
+	labels := mux.Vars(req)["labels"]
+
+	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	groupVersion32 := float32(versionFloat1)
+
+	labelMap := make(map[string]string)
+	for _, label := range strings.Split(labels, ",") {
+		parts := strings.SplitN(label, ":", 2)
+		if len(parts) == 2 {
+			labelMap[parts[0]] = parts[1]
+		}
+	}
+
+	err = ch.service.DeleteConfigsByLabels(groupName, groupVersion32, labelMap)
+	if err != nil {
+		http.Error(w, "Failed to delete configuration from configuration group: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	renderer(req.Context(), w, map[string]string{"message": "Configuration deleted from group successfully"})
 }

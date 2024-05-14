@@ -69,8 +69,8 @@ func main() {
 	router.Handle("/config/configGroup/", middleware.RateLimit(limiter, server1.AddToConfigGroup)).Methods("POST")
 	router.Handle("/config/{name}/{groupName}/{groupVersion}/", middleware.RateLimit(limiter, server1.DeleteFromConfigGroup)).Methods("DELETE")
 
-	//router.HandleFunc("/configGroup/{name}/{version}/{labels}", server1.DeleteConfigsByLabels).Methods("DELETE")
-	router.HandleFunc("/configGroup/{groupName}/{groupVersion}/{labels}", server1.GetConfigsByLabels).Methods("GET")
+	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware.RateLimit(limiter, server1.DeleteConfigsByLabels)).Methods("DELETE")
+	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware.RateLimit(limiter, server1.GetConfigsByLabels)).Methods("GET")
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
