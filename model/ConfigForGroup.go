@@ -1,8 +1,8 @@
 package model
 
 type ConfigForGroup struct {
-	Labels     map[string]string `json:"labels"`
 	Name       string            `json:"name"`
+	Labels     map[string]string `json:"labels"`
 	Parameters map[string]string `json:"parameters"`
 }
 
@@ -17,9 +17,6 @@ func NewConfigForGroup(name string, labels map[string]string, parameters map[str
 }
 
 type ConfigForGroupRepository interface {
-	GetConfig(name string, version float32) (*ConfigForGroup, error)
-	AddConfig(config *ConfigForGroup) error
-	DeleteConfig(name string, version float32) error
 	AddToConfigGroup(config *ConfigForGroup, groupName string, groupVersion float32) error
-	DeleteFromConfigGroup(config *ConfigForGroup, groupName string, groupVersion float32) error
+	DeleteFromConfigGroup(ConfigForGroupName string, groupName string, groupVersion float32) error
 }

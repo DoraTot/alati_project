@@ -20,8 +20,11 @@ import (
 func main() {
 	//repo := repositories.NewConfigConsulRepository() // Ovo koristiti kad budemo radili sa bazom
 	repo2 := repositories.NewConfigGroupInMemRepository()
-	repo := repositories.NewConfigInMemRepository(repo2)
+	repo := repositories.NewConfigInMemRepository()
+	repo1 := repositories.NewConfigForGroupInMemRepository(repo2)
+
 	service := services.NewConfigService(repo)
+	service1 := services.NewConfigForGroupService(repo1)
 	service.Hello()
 	params := make(map[string]string)
 	params["username"] = "pera"
@@ -49,7 +52,7 @@ func main() {
 	router.StrictSlash(true)
 
 	server := handlers.NewConfigHandler(service)
-
+	server1 := handlers.NewConfigForGroupHandler(service1)
 	service2 := services.NewConfigGroupService(repo2)
 	server2 := handlers.NewConfigGroupHandler(service2)
 
@@ -59,8 +62,10 @@ func main() {
 	router.HandleFunc("/configGroup/", server2.CreateConfigGroup).Methods("POST")
 	router.HandleFunc("/configGroup/{name}/{version}/", server2.GetConfigGroup).Methods("GET")
 	router.HandleFunc("/configGroup/{name}/{version}/", server2.DeleteConfigGroup).Methods("DELETE")
-	router.HandleFunc("/config/configGroup/", server.AddToConfigGroup).Methods("POST")
-	router.HandleFunc("/config/{name}/{version}/{groupName}/{groupVersion}/", server.DeleteFromConfigGroup).Methods("DELETE")
+	router.HandleFunc("/config/configGroup/", server1.AddToConfigGroup).Methods("POST")
+	router.HandleFunc("/config/{name}/{groupName}/{groupVersion}/", server1.DeleteFromConfigGroup).Methods("DELETE")
+	//router.HandleFunc("/configGroup/{name}/{version}/{labels}", server1.DeleteConfigsByLabels).Methods("DELETE")
+	//router.HandleFunc("/configGroup/{name}/{version}/{labels}", server1.GetConfigsByLabels).Methods("GET")
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
