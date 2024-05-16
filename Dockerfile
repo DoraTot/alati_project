@@ -1,4 +1,4 @@
-FROM golang:1.19
+FROM golang:1.19 AS builder
 
 # Set destination for COPY
 WORKDIR /app
@@ -12,6 +12,15 @@ COPY ./ ./
 
 # Build
 RUN CGO_ENABLED=0 go build -o /main
+
+#Run stage
+FROM alpine:latest
+
+# Set destination for the binary
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=builder /main /main
 
 # Expose
 EXPOSE 8000
