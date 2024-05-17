@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"projekat/model"
@@ -15,13 +16,12 @@ import (
 )
 
 type ConfigHandler struct {
+	logger  *log.Logger
 	service services.ConfigService
 }
 
-func NewConfigHandler(service services.ConfigService) ConfigHandler {
-	return ConfigHandler{
-		service: service,
-	}
+func NewConfigHandler(l *log.Logger, s services.ConfigService) *ConfigHandler {
+	return &ConfigHandler{l, s}
 }
 
 func decodeBody(ctx context.Context, r io.Reader) (*model.Config, error) {

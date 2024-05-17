@@ -20,10 +20,21 @@ import (
 )
 
 func main() {
-	//repo := repositories.NewConfigConsulRepository() // Ovo koristiti kad budemo radili sa bazom
+	os.Setenv("DB", "127.0.0.1") // consul server address
+	os.Setenv("DBPORT", "8500")  // default port for consul is this
+
+	port := os.Getenv("PORT") // set port for consul
+	if len(port) == 0 {
+		port = "8080"
+	}
+	logger := log.New(os.Stdout, "[config-api] ", log.LstdFlags)
+
+	repo, err := repositories.New(logger) // new consul repo for configs
+	if err != nil {
+		logger.Fatal("Failed to create repository:", err)
+	}
 
 	repo2 := repositories.NewConfigGroupInMemRepository()
-	repo := repositories.NewConfigInMemRepository()
 	repo1 := repositories.NewConfigForGroupInMemRepository(repo2)
 
 	service := services.NewConfigService(repo)
@@ -33,7 +44,7 @@ func main() {
 	params["username"] = "pera"
 	params["password"] = "pera"
 	configs := model.NewConfig("db_config", 2.0, params)
-	err := service.AddConfig(configs.Name, configs.Version, configs.Parameters)
+	err = service.AddConfig(configs.Name, configs.Version, configs.Parameters)
 	if err != nil {
 		return
 	}
@@ -54,7 +65,7 @@ func main() {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 
-	server := handlers.NewConfigHandler(service)
+	server := handlers.NewConfigHandler(logger, service)
 
 	server1 := handlers.NewConfigForGroupHandler(service1)
 	service2 := services.NewConfigGroupService(repo2)
