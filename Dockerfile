@@ -14,7 +14,7 @@ COPY ./ ./
 RUN CGO_ENABLED=0 go build -o /main
 
 # Expose
-EXPOSE 8000
+EXPOSE 8080
 
 # Run
 CMD ["/main"]

@@ -20,8 +20,18 @@ import (
 )
 
 func main() {
-	os.Setenv("DB", "127.0.0.1") // consul server address
-	os.Setenv("DBPORT", "8500")  // default port for consul is this
+	//os.Setenv("DB", "127.0.0.1") // consul server address
+	//os.Setenv("DBPORT", "8500")  // default port for consul is this
+	dbHost := os.Getenv("DB") // Consul service name in Docker Compose
+	dbPort := os.Getenv("DBPORT")
+
+	if dbHost == "" || dbPort == "" {
+		log.Fatal("DB and DBPORT environment variables must be set")
+	}
+
+	// Set Consul address
+	consulAddress := dbHost + ":" + dbPort
+	os.Setenv("CONSUL_HTTP_ADDR", consulAddress)
 
 	port := os.Getenv("PORT") // set port for consul
 	if len(port) == 0 {
