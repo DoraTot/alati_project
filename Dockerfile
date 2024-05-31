@@ -1,5 +1,4 @@
-FROM golang:1.19
-
+FROM golang:latest as builder
 # Set destination for COPY
 WORKDIR /app
 
@@ -11,10 +10,19 @@ RUN go mod download
 COPY ./ ./
 
 # Build
-RUN CGO_ENABLED=0 go build -o /main
+RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o main .
 
-# Expose
-EXPOSE 8080
+FROM alpine:latest
 
-# Run
-CMD ["/main"]
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+COPY --from=builder /app/main .
+
+# Expose the port
+EXPOSE 8000
+
+# Command to run the executable
+CMD ["./main"]
