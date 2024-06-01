@@ -20,15 +20,8 @@ import (
 )
 
 func main() {
-	err := os.Setenv("DB", "127.0.0.1")
-	if err != nil {
-		return
-	} // consul server address
-	err = os.Setenv("DBPORT", "8500")
-	if err != nil {
-		return
-	} // default port for consul is this
-	dbHost := os.Getenv("DB") // Consul service name in Docker Compose
+
+	dbHost := os.Getenv("DB")
 	dbPort := os.Getenv("DBPORT")
 
 	if dbHost == "" || dbPort == "" {
@@ -36,7 +29,7 @@ func main() {
 	}
 
 	// Set Consul address
-	consulAddress := dbHost + ":" + dbPort
+	consulAddress := "http://" + dbHost + ":" + dbPort
 	os.Setenv("CONSUL_HTTP_ADDR", consulAddress)
 
 	port := os.Getenv("PORT") // set port for consul
@@ -100,7 +93,7 @@ func main() {
 	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware.RateLimit(limiter, server1.GetConfigsByLabels)).Methods("GET")
 
 	srv := &http.Server{
-		Addr:    "0.0.0.0:8000",
+		Addr:    "0.0.0.0:" + port,
 		Handler: router,
 	}
 
