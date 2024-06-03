@@ -48,11 +48,15 @@ func main() {
 		logger.Fatal("Failed to create repository for configGroup:", err)
 	}
 
+	repoCFG, err3 := repositories.NewCFG(logger)
+	if err3 != nil {
+		logger.Fatal("Failed to create repository for configForGroup:", err3)
+	}
+
 	//repo2 := repositories.NewConfigGroupInMemRepository()
-	repo1 := repositories.NewConfigForGroupConsulRepository()
 
 	service := services.NewConfigService(repo)
-	service1 := services.NewConfigForGroupService(repo1)
+	service1 := services.NewConfigForGroupService(repoCFG)
 	service.Hello()
 	params := make(map[string]string)
 	params["username"] = "pera"

@@ -41,6 +41,9 @@ func labelsMatch1(configLabels map[string]string, targetLabels map[string]string
 }
 
 func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]model.ConfigForGroup, error) {
+	if c.cli == nil {
+		return nil, fmt.Errorf("Consul client is not initialized")
+	}
 	kv := c.cli.KV()
 	groupKey := constructKeyForGroup(groupName, groupVersion)
 	pair, _, err := kv.Get(groupKey, nil)
@@ -104,6 +107,7 @@ func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, 
 }
 
 func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigForGroup, groupName string, groupVersion float32) error {
+
 	kv := c.cli.KV()
 	groupKey := constructKeyForGroup(groupName, groupVersion)
 
@@ -133,12 +137,14 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 	if err != nil {
 		return err
 	}
+	c.logger.Printf("Adding config to config group with SID: %s, Data: %s\n", groupKey, string(updatedGroupJSON))
 
 	p := &api.KVPair{Key: groupKey, Value: updatedGroupJSON}
 	_, err = kv.Put(p, nil)
 	if err != nil {
 		return err
 	}
+	c.logger.Println("Config successfully added to config group Consul KV:", groupKey)
 
 	return nil
 }
@@ -175,6 +181,7 @@ func (c ConfigForGroupConsulRepository) DeleteFromConfigGroup(configForGroupName
 
 	if found {
 		group.Configurations = append(group.Configurations[:index], group.Configurations[index+1:]...)
+		c.logger.Println("Config successfully deleted from group Consul:")
 
 		updatedGroupJSON, err := json.Marshal(group)
 		if err != nil {
