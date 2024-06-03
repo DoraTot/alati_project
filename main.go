@@ -43,8 +43,13 @@ func main() {
 		logger.Fatal("Failed to create repository:", err)
 	}
 
-	repo2 := repositories.NewConfigGroupInMemRepository()
-	repo1 := repositories.NewConfigForGroupInMemRepository(repo2)
+	repoCG, err2 := repositories.NewCG(logger) // consul for configGroup
+	if err2 != nil {
+		logger.Fatal("Failed to create repository for configGroup:", err)
+	}
+
+	//repo2 := repositories.NewConfigGroupInMemRepository()
+	repo1 := repositories.NewConfigForGroupConsulRepository()
 
 	service := services.NewConfigService(repo)
 	service1 := services.NewConfigForGroupService(repo1)
@@ -77,7 +82,7 @@ func main() {
 	server := handlers.NewConfigHandler(logger, service)
 
 	server1 := handlers.NewConfigForGroupHandler(service1)
-	service2 := services.NewConfigGroupService(repo2)
+	service2 := services.NewConfigGroupService(repoCG)
 	server2 := handlers.NewConfigGroupHandler(service2)
 
 	router.Handle("/config/", middleware.RateLimit(limiter, server.CreatePostHandler)).Methods("POST")
