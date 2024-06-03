@@ -38,8 +38,9 @@ func main() {
 	if err2 != nil {
 		logger.Fatal("Failed to create repository for configGroup:", err)
 	}
-	repo2 := repositories.NewConfigGroupInMemRepository()
-	repo1 := repositories.NewConfigForGroupInMemRepository(repo2)
+
+	//repo2 := repositories.NewConfigGroupInMemRepository()
+	repo1 := repositories.NewConfigForGroupConsulRepository()
 
 	service := services.NewConfigService(repo)
 	service1 := services.NewConfigForGroupService(repo1)

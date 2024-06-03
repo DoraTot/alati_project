@@ -66,7 +66,7 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 	contentType := req.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		http.Error(w, "dipshit: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "an error has occured: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mediaType != "application/json" {
