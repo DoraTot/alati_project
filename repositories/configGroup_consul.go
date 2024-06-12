@@ -29,6 +29,13 @@ func NewCG(logger *log.Logger) (*ConfigGroupConsulRepository, error) {
 	return &ConfigGroupConsulRepository{cli: client, logger: logger}, nil
 }
 
+// swagger:route GET /configGroup/{name}/{version}/ getConfigGroup
+// Get configGroup by ID
+//
+// responses:
+//
+//	404: ErrorResponse
+//	200: ResponseConfigGroup
 func (c ConfigGroupConsulRepository) GetConfigGroup(name string, version float32) (*model.ConfigGroup, error) {
 	kv := c.cli.KV()
 	key := constructKeyForGroup(name, version)
@@ -49,6 +56,14 @@ func (c ConfigGroupConsulRepository) GetConfigGroup(name string, version float32
 
 }
 
+// swagger:route POST /configGroup/ configGroup addConfigGroup
+// Add new configGroup
+//
+// responses:
+//
+//	415: ErrorResponse
+//	400: ErrorResponse
+//	201: ResponseConfigGroup
 func (c ConfigGroupConsulRepository) AddConfigGroup(config *model.ConfigGroup) error {
 	kv := c.cli.KV()
 	key := constructKeyForGroup(config.Name, config.Version)
@@ -70,6 +85,13 @@ func (c ConfigGroupConsulRepository) AddConfigGroup(config *model.ConfigGroup) e
 
 }
 
+// swagger:route DELETE /configGroup/{name}/{version}/ deleteConfigGroup
+// Delete configGroup
+//
+// responses:
+//
+//	404: ErrorResponse
+//	204: NoContentResponse
 func (c ConfigGroupConsulRepository) DeleteConfigGroup(name string, version float32) error {
 	kv := c.cli.KV()
 	_, err := kv.Delete(constructKeyForGroup(name, version), nil)

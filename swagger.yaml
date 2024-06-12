@@ -1,0 +1,388 @@
+swagger: "2.0"
+info:
+  title: Config API
+  version: "1.0.0"
+definitions:
+  Config:
+    properties:
+      name:
+        description: |-
+          Name of the Config
+          in: string
+        type: string
+        x-go-name: Name
+      parameters:
+        additionalProperties:
+          type: string
+        description: |-
+          Parameters of the Config
+          in: map[string]string
+        type: object
+        x-go-name: Parameters
+      version:
+        description: |-
+          Version of the Config
+          in: float32
+        format: float
+        type: number
+        x-go-name: Version
+    type: object
+    x-go-package: projekat/model
+  ConfigForGroup:
+    properties:
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Labels of the ConfigForGroup
+          in: map[string]string
+        type: object
+        x-go-name: Labels
+      name:
+        description: |-
+          Name of the ConfigForGroup
+          in: string
+        type: string
+        x-go-name: Name
+      parameters:
+        additionalProperties:
+          type: string
+        description: |-
+          Parameters of the ConfigForGroup
+          in: map[string]string
+        type: object
+        x-go-name: Parameters
+    type: object
+    x-go-package: projekat/model
+  ConfigGroup:
+    properties:
+      configurations:
+        description: |-
+          Configurations of the ConfigGroup
+          in: []ConfigForGroup
+        items:
+          $ref: '#/definitions/ConfigForGroup'
+        type: array
+        x-go-name: Configurations
+      name:
+        description: |-
+          Name of the ConfigGroup
+          in: string
+        type: string
+        x-go-name: Name
+      version:
+        description: |-
+          Version of the ConfigGroup
+          in: float32
+        format: float
+        type: number
+        x-go-name: Version
+    type: object
+    x-go-package: projekat/model
+paths:
+  /config/:
+    post:
+      description: Add new config
+      operationId: addConfig
+      parameters:
+        - description: 'name: Config'
+          in: body
+          name: config
+          required: true
+          schema:
+            $ref: '#/definitions/Config'
+          x-go-name: Config
+      responses:
+        "201":
+          $ref: '#/responses/ResponseConfig'
+        "400":
+          $ref: '#/responses/ErrorResponse'
+        "415":
+          $ref: '#/responses/ErrorResponse'
+      tags:
+        - config
+  /config/{name}/{groupName}/{groupVersion}/:
+    delete:
+      description: Delete config from group
+      operationId: deleteFromConfigGroup
+      parameters:
+        - description: Config name
+          in: path
+          name: name
+          required: true
+          type: string
+          x-go-name: Name
+        - description: Group name
+          in: path
+          name: groupName
+          required: true
+          type: string
+          x-go-name: GroupName
+        - description: Group version
+          format: float
+          in: path
+          name: groupVersion
+          required: true
+          type: number
+          x-go-name: GroupVersion
+      responses:
+        "204":
+          $ref: '#/responses/NoContentResponse'
+        "404":
+          $ref: '#/responses/ErrorResponse'
+  /config/{name}/{version}/:
+    delete:
+      description: Delete config
+      operationId: deleteConfig
+      parameters:
+        - description: Config name
+          in: path
+          name: name
+          required: true
+          type: string
+          x-go-name: Name
+        - description: Version
+          format: float
+          in: path
+          name: version
+          required: true
+          type: number
+          x-go-name: Version
+      responses:
+        "204":
+          $ref: '#/responses/NoContentResponse'
+        "404":
+          $ref: '#/responses/ErrorResponse'
+      tags:
+        - config
+    get:
+      description: Get config
+      operationId: getConfig
+      parameters:
+        - description: Config name
+          in: path
+          name: name
+          required: true
+          type: string
+          x-go-name: Name
+        - description: Version
+          format: float
+          in: path
+          name: version
+          required: true
+          type: number
+          x-go-name: Version
+      responses:
+        "200":
+          $ref: '#/responses/ResponseConfig'
+  /config/configGroup/:
+    post:
+      description: Add config to group
+      operationId: addToConfigGroup
+      parameters:
+        - description: 'name: ConfigForGroup'
+          in: body
+          name: configForGroup
+          required: true
+          schema:
+            $ref: '#/definitions/ConfigForGroup'
+          x-go-name: ConfigForGroup
+      responses:
+        "201":
+          $ref: '#/responses/ResponseConfigForGroup'
+        "400":
+          $ref: '#/responses/ErrorResponse'
+        "415":
+          $ref: '#/responses/ErrorResponse'
+  /configGroup/:
+    post:
+      description: Add new configGroup
+      operationId: addConfigGroup
+      responses:
+        "201":
+          $ref: '#/responses/ResponseConfigGroup'
+        "400":
+          $ref: '#/responses/ErrorResponse'
+        "415":
+          $ref: '#/responses/ErrorResponse'
+      tags:
+        - configGroup
+  /configGroup/{groupName}/{groupVersion}/{labels}:
+    delete:
+      description: Delete configForGroup by labels
+      operationId: deleteConfigsByLabels
+      parameters:
+        - description: Group name
+          in: path
+          name: groupName
+          required: true
+          type: string
+          x-go-name: GroupName
+        - description: Group version
+          format: float
+          in: path
+          name: groupVersion
+          required: true
+          type: number
+          x-go-name: GroupVersion
+        - description: Group labels
+          in: path
+          name: labels
+          required: true
+          type: string
+          x-go-name: Labels
+      responses:
+        "204":
+          $ref: '#/responses/NoContentResponse'
+        "404":
+          $ref: '#/responses/ErrorResponse'
+    get:
+      description: Get all configForGroups by labels
+      operationId: getConfigsByLabels
+      parameters:
+        - description: Group name
+          in: path
+          name: groupName
+          required: true
+          type: string
+          x-go-name: GroupName
+        - description: Group version
+          format: float
+          in: path
+          name: groupVersion
+          required: true
+          type: number
+          x-go-name: GroupVersion
+        - description: Group labels
+          in: path
+          name: labels
+          required: true
+          type: string
+          x-go-name: Labels
+      responses:
+        "200":
+          $ref: '#/responses/ResponseConfigForGroup'
+  /configGroup/{name}/{version}/:
+    delete:
+      description: Delete configGroup
+      operationId: deleteConfigGroup
+      parameters:
+        - description: Group name
+          in: path
+          name: name
+          required: true
+          type: string
+          x-go-name: Name
+        - description: Version
+          format: float
+          in: path
+          name: version
+          required: true
+          type: number
+          x-go-name: Version
+      responses:
+        "204":
+          $ref: '#/responses/NoContentResponse'
+        "404":
+          $ref: '#/responses/ErrorResponse'
+    get:
+      description: Get configGroup by ID
+      operationId: getConfigGroup
+      parameters:
+        - description: Group name
+          in: path
+          name: name
+          required: true
+          type: string
+          x-go-name: Name
+        - description: Version
+          format: float
+          in: path
+          name: version
+          required: true
+          type: number
+          x-go-name: Version
+      responses:
+        "200":
+          $ref: '#/responses/ResponseConfigGroup'
+        "404":
+          $ref: '#/responses/ErrorResponse'
+responses:
+  ErrorResponse:
+    description: ""
+    headers:
+      message:
+        description: |-
+          Message of the error
+          in: string
+        type: string
+      status:
+        description: |-
+          Error status code
+          in: int64
+        format: int64
+        type: integer
+  NoContentResponse:
+    description: ""
+  ResponseConfig:
+    description: ""
+    headers:
+      name:
+        description: |-
+          Name of the Config
+          in: string
+        type: string
+      parameters:
+        description: |-
+          Parameters of the Config
+          in: map[string]string
+        type: string
+      version:
+        description: |-
+          Version of the Config
+          in: float32
+        format: float
+        type: number
+    schema:
+      additionalProperties:
+        type: string
+      type: object
+  ResponseConfigForGroup:
+    description: ""
+    headers:
+      labels:
+        description: |-
+          Labels of the ConfigForGroup
+          in: map[string]string
+        type: string
+      name:
+        description: |-
+          Name of the ConfigForGroup
+          in: string
+        type: string
+      parameters:
+        description: |-
+          Parameters of the ConfigForGroup
+          in: map[string]string
+        type: string
+    schema:
+      additionalProperties:
+        type: string
+      type: object
+  ResponseConfigGroup:
+    description: ""
+    schema:
+      type: object
+      properties:
+        configurations:
+          description: "Configurations of the ConfigGroup"
+          type: array
+          items:
+            $ref: '#/definitions/ConfigForGroup'
+        name:
+          description: "Name of the ConfigGroup"
+          type: string
+        version:
+          description: "Version of the ConfigGroup"
+          type: number
+          format: float

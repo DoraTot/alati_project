@@ -40,6 +40,12 @@ func labelsMatch1(configLabels map[string]string, targetLabels map[string]string
 	return true
 }
 
+// swagger:route GET /configGroup/{groupName}/{groupVersion}/{labels} getConfigsByLabels
+// Get all configForGroups by labels
+//
+// responses:
+//
+//	200: []ResponseConfigForGroup
 func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]model.ConfigForGroup, error) {
 	if c.cli == nil {
 		return nil, fmt.Errorf("Consul client is not initialized")
@@ -67,6 +73,13 @@ func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, gro
 	return matchingConfigs, nil
 }
 
+// swagger:route DELETE /configGroup/{groupName}/{groupVersion}/{labels} deleteConfigsByLabels
+// Delete configForGroup by labels
+//
+// responses:
+//
+//	404: ErrorResponse
+//	204: NoContentResponse
 func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) error {
 	kv := c.cli.KV()
 	groupKey := constructKeyForGroup(groupName, groupVersion)
@@ -106,6 +119,14 @@ func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, 
 	return nil
 }
 
+// swagger:route POST /config/configGroup/ addToConfigGroup
+// Add config to group
+//
+// responses:
+//
+//	415: ErrorResponse
+//	400: ErrorResponse
+//	201: ResponseConfigForGroup
 func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigForGroup, groupName string, groupVersion float32) error {
 
 	kv := c.cli.KV()
@@ -149,6 +170,13 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 	return nil
 }
 
+// swagger:route DELETE /config/{name}/{groupName}/{groupVersion}/ deleteFromConfigGroup
+// Delete config from group
+//
+// responses:
+//
+//	404: ErrorResponse
+//	204: NoContentResponse
 func (c ConfigForGroupConsulRepository) DeleteFromConfigGroup(configForGroupName string, groupName string, groupVersion float32) error {
 	kv := c.cli.KV()
 

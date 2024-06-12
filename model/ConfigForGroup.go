@@ -1,12 +1,19 @@
 package model
 
+// swagger:model ConfigForGroup
 type ConfigForGroup struct {
-	Name       string            `json:"name"`
-	Labels     map[string]string `json:"labels"`
+	// Name of the ConfigForGroup
+	// in: string
+	Name string `json:"name"`
+
+	// Labels of the ConfigForGroup
+	// in: map[string]string
+	Labels map[string]string `json:"labels"`
+
+	// Parameters of the ConfigForGroup
+	// in: map[string]string
 	Parameters map[string]string `json:"parameters"`
 }
-
-// todo: dodati metode
 
 func NewConfigForGroup(name string, labels map[string]string, parameters map[string]string) *ConfigForGroup {
 	return &ConfigForGroup{

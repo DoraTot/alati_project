@@ -1,9 +1,23 @@
+// Post API
+//
+//	Title: Post API
+//
+//	Schemes: http
+//	Version: 0.0.1
+//	BasePath: /
+//
+//	Produces:
+//	  - application/json
+//
+// swagger:meta
+
 package main
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"golang.org/x/time/rate"
 	"log"
@@ -11,7 +25,7 @@ import (
 	"os"
 	"os/signal"
 	"projekat/handlers"
-	"projekat/middleware"
+	middleware2 "projekat/middleware"
 	"projekat/model"
 	"projekat/repositories"
 	"projekat/services"
@@ -89,18 +103,25 @@ func main() {
 	service2 := services.NewConfigGroupService(repoCG)
 	server2 := handlers.NewConfigGroupHandler(service2)
 
-	router.Handle("/config/", middleware.RateLimit(limiter, server.CreatePostHandler)).Methods("POST")
-	router.Handle("/config/{name}/{version}/", middleware.RateLimit(limiter, server.Get)).Methods("GET")
-	router.Handle("/config/{name}/{version}/", middleware.RateLimit(limiter, server.DelPostHandler)).Methods("DELETE")
-	router.Handle("/configGroup/", middleware.RateLimit(limiter, server2.CreateConfigGroup)).Methods("POST")
-	router.Handle("/configGroup/{name}/{version}/", middleware.RateLimit(limiter, server2.GetConfigGroup)).Methods("GET")
-	router.Handle("/configGroup/{name}/{version}/", middleware.RateLimit(limiter, server2.DeleteConfigGroup)).Methods("DELETE")
-	router.Handle("/config/configGroup/", middleware.RateLimit(limiter, server1.AddToConfigGroup)).Methods("POST")
-	router.Handle("/config/{name}/{groupName}/{groupVersion}/", middleware.RateLimit(limiter, server1.DeleteFromConfigGroup)).Methods("DELETE")
+	router.Handle("/config/", middleware2.RateLimit(limiter, server.CreatePostHandler)).Methods("POST")
+	router.Handle("/config/{name}/{version}/", middleware2.RateLimit(limiter, server.Get)).Methods("GET")
+	router.Handle("/config/{name}/{version}/", middleware2.RateLimit(limiter, server.DelPostHandler)).Methods("DELETE")
+	router.Handle("/configGroup/", middleware2.RateLimit(limiter, server2.CreateConfigGroup)).Methods("POST")
+	router.Handle("/configGroup/{name}/{version}/", middleware2.RateLimit(limiter, server2.GetConfigGroup)).Methods("GET")
+	router.Handle("/configGroup/{name}/{version}/", middleware2.RateLimit(limiter, server2.DeleteConfigGroup)).Methods("DELETE")
+	router.Handle("/config/configGroup/", middleware2.RateLimit(limiter, server1.AddToConfigGroup)).Methods("POST")
+	router.Handle("/config/{name}/{groupName}/{groupVersion}/", middleware2.RateLimit(limiter, server1.DeleteFromConfigGroup)).Methods("DELETE")
 
-	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware.RateLimit(limiter, server1.DeleteConfigsByLabels)).Methods("DELETE")
-	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware.RateLimit(limiter, server1.GetConfigsByLabels)).Methods("GET")
+	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware2.RateLimit(limiter, server1.DeleteConfigsByLabels)).Methods("DELETE")
+	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware2.RateLimit(limiter, server1.GetConfigsByLabels)).Methods("GET")
+	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 
+	// SwaggerUI
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
+	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
+	router.Handle("/docs", developerDocumentationHandler)
+
+	// start server
 	srv := &http.Server{
 		Addr:    "0.0.0.0:" + port,
 		Handler: router,
@@ -117,6 +138,7 @@ func main() {
 	<-quit
 	log.Println("Service shutting down...")
 
+	// gracefully stop server
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {

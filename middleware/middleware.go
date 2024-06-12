@@ -3,6 +3,8 @@ package middleware
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"golang.org/x/time/rate"
 )
@@ -23,4 +25,15 @@ func RateLimit(limiter *rate.Limiter, next func(w http.ResponseWriter, r *http.R
 			next(w, r)
 		}
 	})
+}
+
+func SwaggerHandler(w http.ResponseWriter, r *http.Request) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		http.Error(w, "Unable to determine working directory", http.StatusInternalServerError)
+		return
+	}
+
+	swaggerPath := filepath.Join(cwd, "swagger.yaml")
+	http.ServeFile(w, r, swaggerPath)
 }

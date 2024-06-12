@@ -29,13 +29,12 @@ func New(logger *log.Logger) (*ConfigConsulRepository, error) {
 	return &ConfigConsulRepository{cli: client, logger: logger}, nil
 }
 
+// swagger:route GET /config/{name}/{version}/ getConfig
+// Get config
 //
-//func generateKey(name string, version float32) (string, string) {
-//	id := uuid.New().String()
-//	key := fmt.Sprintf("configs/%s/%.1f", name, version)
-//	return key, id
-//}
-
+// responses:
+//
+//	200: ResponseConfig
 func (c ConfigConsulRepository) GetConfig(name string, version float32) (*model.Config, error) {
 	kv := c.cli.KV()
 	key := constructKey(name, version)
@@ -55,6 +54,14 @@ func (c ConfigConsulRepository) GetConfig(name string, version float32) (*model.
 	return config, nil
 }
 
+// swagger:route POST /config/ config addConfig
+// Add new config
+//
+// responses:
+//
+//	415: ErrorResponse
+//	400: ErrorResponse
+//	201: ResponseConfig
 func (c ConfigConsulRepository) AddConfig(config *model.Config) error {
 	kv := c.cli.KV()
 	key := constructKey(config.Name, config.Version)
@@ -75,6 +82,13 @@ func (c ConfigConsulRepository) AddConfig(config *model.Config) error {
 	return nil
 }
 
+// swagger:route DELETE /config/{name}/{version}/ config deleteConfig
+// Delete config
+//
+// responses:
+//
+//	404: ErrorResponse
+//	204: NoContentResponse
 func (c ConfigConsulRepository) DeleteConfig(name string, version float32) error {
 	kv := c.cli.KV()
 	_, err := kv.Delete(constructKey(name, version), nil)
