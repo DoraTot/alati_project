@@ -34,6 +34,6 @@ func SwaggerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	swaggerPath := filepath.Join(cwd, "swagger.yaml")
+	swaggerPath := filepath.Join(cwd, "/swagger.yaml")
 	http.ServeFile(w, r, swaggerPath)
 }

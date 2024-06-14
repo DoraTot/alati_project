@@ -114,10 +114,11 @@ func main() {
 
 	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware2.RateLimit(limiter, server1.DeleteConfigsByLabels)).Methods("DELETE")
 	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware2.RateLimit(limiter, server1.GetConfigsByLabels)).Methods("GET")
-	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
+	//router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
+	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./"))))
 
 	// SwaggerUI
-	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "/swagger.yaml"}
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
 
