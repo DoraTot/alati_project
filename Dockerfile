@@ -20,6 +20,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 COPY --from=builder /app/main .
+COPY swagger.yaml /app/swagger.yaml
 
 # Expose the port
 EXPOSE 8080

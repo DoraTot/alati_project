@@ -81,7 +81,10 @@ func main() {
 		return
 	}
 
+	idempotencyService := services.NewIdempotencyService(*repo)
+
 	var limiter = rate.NewLimiter(0.167, 10) //For testing
+	idempotencyMiddleware := middleware2.NewIdempotency(&idempotencyService)
 	name := "db_config"
 	version := float32(2.0)
 	config, err := repo.GetConfig(name, version)
@@ -96,6 +99,10 @@ func main() {
 
 	router := mux.NewRouter()
 	router.StrictSlash(true)
+
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware2.AdaptIdempotencyHandler(next, idempotencyMiddleware)
+	})
 
 	server := handlers.NewConfigHandler(logger, service)
 
@@ -117,10 +124,10 @@ func main() {
 	//router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 	//router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./"))))
 
-	router.HandleFunc("./swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
+	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 
 	// SwaggerUI
-	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "/swagger.yaml"}
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
 
