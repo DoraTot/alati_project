@@ -137,6 +137,8 @@ func main() {
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
 
+	router.Handle("/metrics", metricsMiddleware.MetricsHandler()).Methods("GET")
+
 	// start server
 	srv := &http.Server{
 		Addr:    "0.0.0.0:" + port,

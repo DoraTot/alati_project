@@ -36,7 +36,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
+      - ./prometheus-data:/prometheus
 
   swagger-ui:
     image: swaggerapi/swagger-ui
@@ -48,3 +48,5 @@ services:
       - ./swagger.yaml:/app/swagger.yaml:ro  # Mount swagger.yaml into the Swagger UI container
     depends_on:
       - server
+
+

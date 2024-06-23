@@ -68,3 +68,5 @@ alive: server-1 172.18.0.2:8301
 event-clock: 5
 alive: server-1 172.18.0.2:8301
 event-clock: 6
+alive: server-1 172.18.0.3:8301
+event-clock: 7
