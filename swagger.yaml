@@ -3,7 +3,7 @@ info:
   description: "This is a sample server for a configuration management API."
   version: "1.0.0"
   title: "Config API"
-host: "localhost:8080"
+host: "localhost:8000"
 basePath: "/"
 schemes:
   - "http"
@@ -140,6 +140,122 @@ paths:
           description: "Config Group deleted"
         404:
           description: "Config Group not found"
+  /config/configGroup/:
+    post:
+      summary: "Add a config to a group"
+      operationId: "addToConfigGroup"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "configForGroup"
+          description: "ConfigForGroup object that needs to be added"
+          required: true
+          schema:
+            $ref: "#/definitions/ConfigForGroup"
+        - name: "groupName"
+          in: "query"
+          description: "Name of the config group"
+          required: true
+          type: "string"
+        - name: "groupVersion"
+          in: "query"
+          description: "Version of the config group"
+          required: true
+          type: "number"
+          format: "float"
+      responses:
+        201:
+          description: "ConfigForGroup created"
+        400:
+          description: "Invalid input"
+        415:
+          description: "Unsupported Media Type"
+  /config/{name}/{groupName}/{groupVersion}/:
+    delete:
+      summary: "Delete a config from a group"
+      operationId: "deleteFromConfigGroup"
+      parameters:
+        - name: "name"
+          in: "path"
+          description: "Name of the config"
+          required: true
+          type: "string"
+        - name: "groupName"
+          in: "path"
+          description: "Name of the config group"
+          required: true
+          type: "string"
+        - name: "groupVersion"
+          in: "path"
+          description: "Version of the config group"
+          required: true
+          type: "number"
+          format: "float"
+      responses:
+        204:
+          description: "Config deleted from group"
+        404:
+          description: "Config or group not found"
+  /configGroup/{groupName}/{groupVersion}/{labels}:
+    get:
+      summary: "Get configs by labels from a group"
+      operationId: "getConfigsByLabels"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "groupName"
+          in: "path"
+          description: "Name of the config group"
+          required: true
+          type: "string"
+        - name: "groupVersion"
+          in: "path"
+          description: "Version of the config group"
+          required: true
+          type: "number"
+          format: "float"
+        - name: "labels"
+          in: "path"
+          description: "Labels of the config"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "Configs retrieved by labels"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ConfigForGroup"
+        404:
+          description: "Config group not found"
+    delete:
+      summary: "Delete configs by labels from a group"
+      operationId: "deleteConfigsByLabels"
+      parameters:
+        - name: "groupName"
+          in: "path"
+          description: "Name of the config group"
+          required: true
+          type: "string"
+        - name: "groupVersion"
+          in: "path"
+          description: "Version of the config group"
+          required: true
+          type: "number"
+          format: "float"
+        - name: "labels"
+          in: "path"
+          description: "Labels of the config"
+          required: true
+          type: "string"
+      responses:
+        204:
+          description: "Configs deleted by labels"
+        404:
+          description: "Config group not found"
 definitions:
   Config:
     type: "object"
@@ -181,21 +297,22 @@ definitions:
     type: "object"
     required:
       - "name"
-      - "version"
+      - "labels"
       - "parameters"
     properties:
       name:
         type: "string"
-        description: "Name of the Config"
-      version:
-        type: "number"
-        format: "float"
-        description: "Version of the Config"
+        description: "Name of the ConfigForGroup"
+      labels:
+        type: "object"
+        additionalProperties:
+          type: "string"
+        description: "Labels of the ConfigForGroup"
       parameters:
         type: "object"
         additionalProperties:
           type: "string"
-        description: "Parameters of the Config"
+        description: "Parameters of the ConfigForGroup"
 responses:
   ErrorResponse:
     description: "Error response"

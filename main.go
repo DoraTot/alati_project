@@ -94,8 +94,21 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
+	idempotencyService := services.NewIdempotencyService(*repo)
+	idempotencyMiddleware := middleware2.NewIdempotency(&idempotencyService)
+	metricsService := services.NewMetricsService()
+	metricsMiddleware := middleware2.NewMetrics(metricsService)
+
 	router := mux.NewRouter()
 	router.StrictSlash(true)
+
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware2.AdaptIdempotencyHandler(next, idempotencyMiddleware)
+	})
+
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware2.AdaptPrometheusHandler(next, metricsMiddleware)
+	})
 
 	server := handlers.NewConfigHandler(logger, service)
 
@@ -117,10 +130,10 @@ func main() {
 	//router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 	//router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./"))))
 
-	router.HandleFunc("./swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
+	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 
 	// SwaggerUI
-	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "http://localhost:8080/swagger.yaml"} // Note the use of http://localhost:8081
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
 

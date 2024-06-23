@@ -9,9 +9,9 @@ services:
     container_name: "config-server"
     hostname: "config-server"
     ports:
-      - "8080:8080"
+      - "8000:8000"
     environment:
-      - PORT=8080
+      - PORT=8000
       - DB=consul
       - DBHOST=consul
       - DBPORT=8500
@@ -33,7 +33,7 @@ services:
   swagger-ui:
     image: swaggerapi/swagger-ui
     ports:
-      - "8081:8080"  # Expose Swagger UI on a different port
+      - "8080:8080"  # Expose Swagger UI on a different port
     environment:
       - SWAGGER_JSON=/app/swagger.yaml
     volumes:
