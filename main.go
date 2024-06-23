@@ -117,10 +117,10 @@ func main() {
 	//router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 	//router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./"))))
 
-	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
+	router.HandleFunc("./swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 
 	// SwaggerUI
-	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "http://localhost:8081/swagger.yaml"} // Note the use of http://localhost:8081
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
 
