@@ -41,7 +41,7 @@ services:
   swagger-ui:
     image: swaggerapi/swagger-ui
     ports:
-      - "8080:8080"  # Expose Swagger UI on a different port
+      - "8081:8080"  # Expose Swagger UI on a different port
     environment:
       - SWAGGER_JSON=/app/swagger.yaml
     volumes:

@@ -48,7 +48,7 @@ func main() {
 
 	port := os.Getenv("PORT") // set port for consul
 	if len(port) == 0 {
-		port = "8080"
+		port = "8000"
 	}
 	logger := log.New(os.Stdout, "[config-api] ", log.LstdFlags)
 
@@ -133,7 +133,7 @@ func main() {
 	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 
 	// SwaggerUI
-	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "http://localhost:8080/swagger.yaml"} // Note the use of http://localhost:8081
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "http://localhost:8081/swagger.yaml"} // Note the use of http://localhost:8081
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
 
