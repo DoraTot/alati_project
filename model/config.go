@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 // swagger:model Config
 type Config struct {
 	// Name of the Config
@@ -24,7 +26,7 @@ func NewConfig(name string, version float32, parameters map[string]string) *Conf
 }
 
 type ConfigRepository interface {
-	GetConfig(name string, version float32) (*Config, error)
-	AddConfig(config *Config) error
-	DeleteConfig(name string, version float32) error
+	GetConfig(name string, version float32, ctx context.Context) (*Config, error)
+	AddConfig(config *Config, ctx context.Context) error
+	DeleteConfig(name string, version float32, ctx context.Context) error
 }

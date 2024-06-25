@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"mime"
 	"net/http"
@@ -15,7 +17,8 @@ import (
 )
 
 type ConfigForGroupHandler struct {
-	service services.ConfigForGroupService
+	Service services.ConfigForGroupService
+	Tracer  trace.Tracer
 }
 
 type AddConfigToGroupRequest struct {
@@ -31,9 +34,10 @@ type AddConfigToGroupRequest struct {
 	} `json:"configGroup"`
 }
 
-func NewConfigForGroupHandler(service services.ConfigForGroupService) ConfigForGroupHandler {
+func NewConfigForGroupHandler(service services.ConfigForGroupService, tracer trace.Tracer) ConfigForGroupHandler {
 	return ConfigForGroupHandler{
-		service: service,
+		service,
+		tracer,
 	}
 }
 
@@ -63,13 +67,18 @@ func renderer(ctx context.Context, w http.ResponseWriter, v interface{}) {
 
 func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *http.Request) {
 
+	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.AddToConfigGroup")
+	defer span.End()
+
 	contentType := req.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "an error has occured: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mediaType != "application/json" {
+		span.SetStatus(codes.Error, err.Error())
 		err := errors.New("expect application/json Content-Type")
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
@@ -78,48 +87,62 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 	var addToGroupReq AddConfigToGroupRequest
 	err = json.NewDecoder(req.Body).Decode(&addToGroupReq)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "failed to decode JSON request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = ch.service.AddToConfigGroup(addToGroupReq.ConfigForGroup.Name, addToGroupReq.ConfigForGroup.Labels, addToGroupReq.ConfigForGroup.Parameters, addToGroupReq.ConfigGroup.Name, addToGroupReq.ConfigGroup.Version)
+	err = ch.Service.AddToConfigGroup(addToGroupReq.ConfigForGroup.Name, addToGroupReq.ConfigForGroup.Labels, addToGroupReq.ConfigForGroup.Parameters, addToGroupReq.ConfigGroup.Name, addToGroupReq.ConfigGroup.Version, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "Failed to add configuration to configuration group: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	renderer(req.Context(), w, map[string]string{"message": "Configuration added to group successfully"})
+	renderer(ctx, w, map[string]string{"message": "Configuration added to group successfully"})
+	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigForGroupHandler) DeleteFromConfigGroup(w http.ResponseWriter, req *http.Request) {
+
+	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.DeleteFromConfigGroup")
+	defer span.End()
+
 	configForGroupName := mux.Vars(req)["name"]
 	groupName := mux.Vars(req)["groupName"]
 	groupVersion := mux.Vars(req)["groupVersion"]
 
 	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	groupVersion32 := float32(versionFloat1)
 
-	err = ch.service.DeleteFromConfigGroup(configForGroupName, groupName, groupVersion32)
+	err = ch.Service.DeleteFromConfigGroup(configForGroupName, groupName, groupVersion32, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "Failed to delete configuration from configuration group: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	renderer(req.Context(), w, map[string]string{"message": "Configuration deleted from group successfully"})
-
+	renderer(ctx, w, map[string]string{"message": "Configuration deleted from group successfully"})
+	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *http.Request) {
+
+	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.GetConfigsByLabels")
+	defer span.End()
+
 	groupName := mux.Vars(req)["groupName"]
 	groupVersion := mux.Vars(req)["groupVersion"]
 	labels := mux.Vars(req)["labels"]
 
 	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -134,8 +157,9 @@ func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *
 	}
 
 	// Call the service method to get configurations by labels
-	configs, err := ch.service.GetConfigsByLabels(groupName, groupVersion32, labelMap)
+	configs, err := ch.Service.GetConfigsByLabels(groupName, groupVersion32, labelMap, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "Failed to get configurations by labels from configuration group: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -145,16 +169,22 @@ func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *
 		configMap[config.Name] = config
 	}
 
-	renderer(req.Context(), w, configMap)
+	renderer(ctx, w, configMap)
+	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigForGroupHandler) DeleteConfigsByLabels(w http.ResponseWriter, req *http.Request) {
+
+	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.DeleteConfigByLabels")
+	defer span.End()
+
 	groupName := mux.Vars(req)["groupName"]
 	groupVersion := mux.Vars(req)["groupVersion"]
 	labels := mux.Vars(req)["labels"]
 
 	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -168,10 +198,13 @@ func (ch *ConfigForGroupHandler) DeleteConfigsByLabels(w http.ResponseWriter, re
 		}
 	}
 
-	err = ch.service.DeleteConfigsByLabels(groupName, groupVersion32, labelMap)
+	err = ch.Service.DeleteConfigsByLabels(groupName, groupVersion32, labelMap, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "Failed to delete configuration from configuration group: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderer(req.Context(), w, map[string]string{"message": "Configuration deleted from group successfully"})
+	renderer(ctx, w, map[string]string{"message": "Configuration deleted from group successfully"})
+	span.SetStatus(codes.Ok, "")
+
 }

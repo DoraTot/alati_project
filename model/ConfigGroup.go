@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 // swagger:model ConfigGroup
 type ConfigGroup struct {
 	// Name of the ConfigGroup
@@ -24,7 +26,7 @@ func NewConfigGroup(name string, version float32, configurations []ConfigForGrou
 }
 
 type ConfigGroupRepository interface {
-	GetConfigGroup(name string, version float32) (*ConfigGroup, error)
-	AddConfigGroup(configGroup *ConfigGroup) error
-	DeleteConfigGroup(name string, version float32) error
+	GetConfigGroup(name string, version float32, ctx context.Context) (*ConfigGroup, error)
+	AddConfigGroup(configGroup *ConfigGroup, ctx context.Context) error
+	DeleteConfigGroup(name string, version float32, ctx context.Context) error
 }
