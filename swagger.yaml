@@ -88,6 +88,11 @@ paths:
       description: Add new config
       operationId: addConfig
       parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          type: string
+          description: Unique key to ensure idempotency of the request
         - description: 'name: Config'
           in: body
           name: config

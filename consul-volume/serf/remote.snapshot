@@ -36,3 +36,7 @@ alive: server-1.dc1 172.23.0.2:8302
 alive: server-1.dc1 172.24.0.2:8302
 alive: server-1.dc1 172.25.0.2:8302
 alive: server-1.dc1 172.26.0.2:8302
+alive: server-1.dc1 172.18.0.2:8302
+alive: server-1.dc1 172.20.0.2:8302
+alive: server-1.dc1 172.21.0.2:8302
+alive: server-1.dc1 172.22.0.2:8302
