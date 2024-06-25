@@ -23,7 +23,7 @@ COPY --from=builder /app/main .
 COPY swagger.yaml /app/swagger.yaml
 
 # Expose the port
-EXPOSE 8080
+EXPOSE 8000
 
 # Command to run the executable
 CMD ["./main"]

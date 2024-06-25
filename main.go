@@ -48,7 +48,7 @@ func main() {
 
 	port := os.Getenv("PORT") // set port for consul
 	if len(port) == 0 {
-		port = "8080"
+		port = "8000"
 	}
 	logger := log.New(os.Stdout, "[config-api] ", log.LstdFlags)
 
@@ -81,10 +81,7 @@ func main() {
 		return
 	}
 
-	idempotencyService := services.NewIdempotencyService(*repo)
-
 	var limiter = rate.NewLimiter(0.167, 10) //For testing
-	idempotencyMiddleware := middleware2.NewIdempotency(&idempotencyService)
 	name := "db_config"
 	version := float32(2.0)
 	config, err := repo.GetConfig(name, version)
@@ -97,11 +94,20 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
+	idempotencyService := services.NewIdempotencyService(*repo)
+	idempotencyMiddleware := middleware2.NewIdempotency(&idempotencyService)
+	metricsService := services.NewMetricsService()
+	metricsMiddleware := middleware2.NewMetrics(metricsService)
+
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware2.AdaptIdempotencyHandler(next, idempotencyMiddleware)
+	})
+
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware2.AdaptPrometheusHandler(next, metricsMiddleware)
 	})
 
 	server := handlers.NewConfigHandler(logger, service)
@@ -127,9 +133,11 @@ func main() {
 	router.HandleFunc("/swagger.yaml", middleware2.SwaggerHandler).Methods("GET")
 
 	// SwaggerUI
-	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "http://localhost:8081/swagger.yaml"}
+	optionsDevelopers := middleware.SwaggerUIOpts{SpecURL: "http://localhost:8081/swagger.yaml"} // Note the use of http://localhost:8081
 	developerDocumentationHandler := middleware.SwaggerUI(optionsDevelopers, nil)
 	router.Handle("/docs", developerDocumentationHandler)
+
+	router.Handle("/metrics", metricsMiddleware.MetricsHandler()).Methods("GET")
 
 	// start server
 	srv := &http.Server{
