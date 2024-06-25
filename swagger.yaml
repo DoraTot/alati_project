@@ -17,6 +17,11 @@ paths:
       produces:
         - "application/json"
       parameters:
+        - name: "Idempotency-Key"
+          in: header
+          required: true
+          type: string
+          description: Unique key to ensure idempotency of the request
         - in: "body"
           name: "config"
           description: "Config object that needs to be added"
@@ -84,6 +89,11 @@ paths:
       produces:
         - "application/json"
       parameters:
+        - name: "Idempotency-Key"
+          in: header
+          required: true
+          type: string
+          description: Unique key to ensure idempotency of the request
         - in: "body"
           name: "configGroup"
           description: "Config Group object that needs to be added"
@@ -149,6 +159,11 @@ paths:
       produces:
         - "application/json"
       parameters:
+        - name: "Idempotency-Key"
+          in: header
+          required: true
+          type: string
+          description: Unique key to ensure idempotency of the request
         - in: "body"
           name: "configForGroup"
           description: "ConfigForGroup object that needs to be added"
