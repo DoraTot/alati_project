@@ -52,21 +52,27 @@ func decoder(ctx context.Context, r io.Reader) (*model.ConfigForGroup, error) {
 	return &c, nil
 }
 
-func renderer(ctx context.Context, w http.ResponseWriter, v interface{}) {
+func (ch *ConfigForGroupHandler) renderer(ctx context.Context, w http.ResponseWriter, v interface{}) {
+	ctx, span := ch.Tracer.Start(ctx, "renderJSON")
+	defer span.End()
+
 	js, err := json.Marshal(v)
 	if err != nil {
+
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(js)
-	if err != nil {
-		return
+
+	if _, err := w.Write(js); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *http.Request) {
-
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.AddToConfigGroup")
 	defer span.End()
 
@@ -74,7 +80,7 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
-		http.Error(w, "an error has occured: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "an error has occurred: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mediaType != "application/json" {
@@ -99,12 +105,11 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 		return
 	}
 
-	renderer(ctx, w, map[string]string{"message": "Configuration added to group successfully"})
+	ch.renderer(ctx, w, map[string]string{"message": "Configuration added to group successfully"})
 	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigForGroupHandler) DeleteFromConfigGroup(w http.ResponseWriter, req *http.Request) {
-
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.DeleteFromConfigGroup")
 	defer span.End()
 
@@ -127,12 +132,11 @@ func (ch *ConfigForGroupHandler) DeleteFromConfigGroup(w http.ResponseWriter, re
 		return
 	}
 
-	renderer(ctx, w, map[string]string{"message": "Configuration deleted from group successfully"})
+	ch.renderer(ctx, w, map[string]string{"message": "Configuration deleted from group successfully"})
 	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *http.Request) {
-
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.GetConfigsByLabels")
 	defer span.End()
 
@@ -169,12 +173,11 @@ func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *
 		configMap[config.Name] = config
 	}
 
-	renderer(ctx, w, configMap)
+	ch.renderer(ctx, w, configMap)
 	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigForGroupHandler) DeleteConfigsByLabels(w http.ResponseWriter, req *http.Request) {
-
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.DeleteConfigByLabels")
 	defer span.End()
 
@@ -204,7 +207,6 @@ func (ch *ConfigForGroupHandler) DeleteConfigsByLabels(w http.ResponseWriter, re
 		http.Error(w, "Failed to delete configuration from configuration group: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderer(ctx, w, map[string]string{"message": "Configuration deleted from group successfully"})
+	ch.renderer(ctx, w, map[string]string{"message": "Configuration deleted from group successfully"})
 	span.SetStatus(codes.Ok, "")
-
 }
