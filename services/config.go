@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"projekat/model"
 )
@@ -19,17 +20,17 @@ func (s ConfigService) Hello() {
 	fmt.Println("hello from config service")
 }
 
-func (s ConfigService) AddConfig(name string, version float32, parameters map[string]string) error {
+func (s ConfigService) AddConfig(name string, version float32, parameters map[string]string, ctx context.Context) error {
 	config := model.NewConfig(name, version, parameters)
-	return s.repo.AddConfig(config)
+	return s.repo.AddConfig(config, ctx)
 }
 
-func (s ConfigService) GetConfig(name string, version float32) (*model.Config, error) {
-	return s.repo.GetConfig(name, version)
+func (s ConfigService) GetConfig(name string, version float32, ctx context.Context) (*model.Config, error) {
+	return s.repo.GetConfig(name, version, ctx)
 }
 
-func (s ConfigService) DeleteConfig(name string, version float32) error {
-	return s.repo.DeleteConfig(name, version)
+func (s ConfigService) DeleteConfig(name string, version float32, ctx context.Context) error {
+	return s.repo.DeleteConfig(name, version, ctx)
 }
 
 // todo: implementiraj metode za dodavanje, brisanje, dobavljanje itd.

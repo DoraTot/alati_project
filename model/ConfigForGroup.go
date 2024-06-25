@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 // swagger:model ConfigForGroup
 type ConfigForGroup struct {
 	// Name of the ConfigForGroup
@@ -24,8 +26,8 @@ func NewConfigForGroup(name string, labels map[string]string, parameters map[str
 }
 
 type ConfigForGroupRepository interface {
-	AddToConfigGroup(config *ConfigForGroup, groupName string, groupVersion float32) error
-	DeleteFromConfigGroup(ConfigForGroupName string, groupName string, groupVersion float32) error
-	GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]ConfigForGroup, error)
-	DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) error
+	AddToConfigGroup(config *ConfigForGroup, groupName string, groupVersion float32, ctx context.Context) error
+	DeleteFromConfigGroup(ConfigForGroupName string, groupName string, groupVersion float32, ctx context.Context) error
+	GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string, ctx context.Context) ([]ConfigForGroup, error)
+	DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string, ctx context.Context) error
 }

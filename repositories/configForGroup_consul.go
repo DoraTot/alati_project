@@ -1,10 +1,13 @@
 package repositories
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/hashicorp/consul/api"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
 	"projekat/model"
@@ -13,9 +16,10 @@ import (
 type ConfigForGroupConsulRepository struct {
 	cli    *api.Client
 	logger *log.Logger
+	Tracer trace.Tracer
 }
 
-func NewCFG(logger *log.Logger) (*ConfigForGroupConsulRepository, error) {
+func NewCFG(logger *log.Logger, tracer trace.Tracer) (*ConfigForGroupConsulRepository, error) {
 	db := os.Getenv("DB")
 	dbport := os.Getenv("DBPORT")
 	if db == "" || dbport == "" {
@@ -27,7 +31,7 @@ func NewCFG(logger *log.Logger) (*ConfigForGroupConsulRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigForGroupConsulRepository{cli: client, logger: logger}, nil
+	return &ConfigForGroupConsulRepository{cli: client, logger: logger, Tracer: tracer}, nil
 }
 
 func labelsMatch1(configLabels map[string]string, targetLabels map[string]string) bool {
@@ -46,22 +50,29 @@ func labelsMatch1(configLabels map[string]string, targetLabels map[string]string
 // responses:
 //
 //	200: []ResponseConfigForGroup
-func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) ([]model.ConfigForGroup, error) {
+func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, groupVersion float32, labels map[string]string, ctx context.Context) ([]model.ConfigForGroup, error) {
+	_, span := c.Tracer.Start(ctx, "ConfigForGroupConsulRepository.GetConfigsByLabels")
+	defer span.End()
+
 	if c.cli == nil {
+		span.SetStatus(codes.Error, "Consul not working")
 		return nil, fmt.Errorf("Consul client is not initialized")
 	}
 	kv := c.cli.KV()
 	groupKey := constructKeyForGroup(groupName, groupVersion)
 	pair, _, err := kv.Get(groupKey, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	if pair == nil {
+		span.SetStatus(codes.Error, "Pair not found")
 		return nil, fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
 	}
 	var group model.ConfigGroup
 	err = json.Unmarshal(pair.Value, &group)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	var matchingConfigs []model.ConfigForGroup
@@ -70,6 +81,7 @@ func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, gro
 			matchingConfigs = append(matchingConfigs, config)
 		}
 	}
+	span.SetStatus(codes.Ok, "Success getting configuration group")
 	return matchingConfigs, nil
 }
 
@@ -80,11 +92,15 @@ func (c ConfigForGroupConsulRepository) GetConfigsByLabels(groupName string, gro
 //
 //	404: ErrorResponse
 //	204: NoContentResponse
-func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string) error {
+func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, groupVersion float32, labels map[string]string, ctx context.Context) error {
+	_, span := c.Tracer.Start(ctx, "ConfigForGroupConsulRepository.DeleteConfigsByLabels")
+	defer span.End()
+
 	kv := c.cli.KV()
 	groupKey := constructKeyForGroup(groupName, groupVersion)
 	pair, _, err := kv.Get(groupKey, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if pair == nil {
@@ -105,6 +121,7 @@ func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, 
 		}
 	}
 	if !labelsFound {
+		span.SetStatus(codes.Error, "labels not found")
 		return errors.New("labels not found")
 	}
 	updatedGroupJSON, err := json.Marshal(group)
@@ -116,6 +133,7 @@ func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, 
 	if err != nil {
 		return err
 	}
+	span.SetStatus(codes.Ok, "Success deleting configuration group by labels")
 	return nil
 }
 
@@ -127,13 +145,17 @@ func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, 
 //	415: ErrorResponse
 //	400: ErrorResponse
 //	201: ResponseConfigForGroup
-func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigForGroup, groupName string, groupVersion float32) error {
+func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigForGroup, groupName string, groupVersion float32, ctx context.Context) error {
+
+	_, span := c.Tracer.Start(ctx, "ConfigForGroupConsulRepository.AddToConfigGroup")
+	defer span.End()
 
 	kv := c.cli.KV()
 	groupKey := constructKeyForGroup(groupName, groupVersion)
 
 	pair, _, err := kv.Get(groupKey, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if pair == nil {
@@ -143,6 +165,7 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 	var group model.ConfigGroup
 	err = json.Unmarshal(pair.Value, &group)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
@@ -156,6 +179,7 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 
 	updatedGroupJSON, err := json.Marshal(group)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	c.logger.Printf("Adding config to config group with SID: %s, Data: %s\n", groupKey, string(updatedGroupJSON))
@@ -163,10 +187,12 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 	p := &api.KVPair{Key: groupKey, Value: updatedGroupJSON}
 	_, err = kv.Put(p, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	c.logger.Println("Config successfully added to config group Consul KV:", groupKey)
 
+	span.SetStatus(codes.Ok, "Success adding configuration group")
 	return nil
 }
 
@@ -177,22 +203,29 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 //
 //	404: ErrorResponse
 //	204: NoContentResponse
-func (c ConfigForGroupConsulRepository) DeleteFromConfigGroup(configForGroupName string, groupName string, groupVersion float32) error {
+func (c ConfigForGroupConsulRepository) DeleteFromConfigGroup(configForGroupName string, groupName string, groupVersion float32, ctx context.Context) error {
+
+	_, span := c.Tracer.Start(ctx, "ConfigForGroupConsulRepository.DeleteFromConfigGroup")
+	defer span.End()
+
 	kv := c.cli.KV()
 
 	groupKey := constructKeyForGroup(groupName, groupVersion)
 
 	pair, _, err := kv.Get(groupKey, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if pair == nil {
+		span.SetStatus(codes.Error, "config does not exist")
 		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
 	}
 
 	var group model.ConfigGroup
 	err = json.Unmarshal(pair.Value, &group)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
@@ -222,12 +255,14 @@ func (c ConfigForGroupConsulRepository) DeleteFromConfigGroup(configForGroupName
 			return err
 		}
 
+		span.SetStatus(codes.Ok, "Success deleting configuration from group")
 		return nil
 	}
 
+	span.SetStatus(codes.Ok, "configuration not found in the specified group")
 	return errors.New("configuration not found in the specified group")
 }
 
-func NewConfigForGroupConsulRepository() model.ConfigForGroupRepository {
-	return ConfigForGroupConsulRepository{}
-}
+//func NewConfigForGroupConsulRepository() model.ConfigForGroupRepository {
+//	return ConfigForGroupConsulRepository{}
+//}

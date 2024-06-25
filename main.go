@@ -19,11 +19,19 @@ import (
 	"fmt"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"golang.org/x/time/rate"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"projekat/configuration"
 	"projekat/handlers"
 	middleware2 "projekat/middleware"
 	"projekat/model"
@@ -52,17 +60,30 @@ func main() {
 	}
 	logger := log.New(os.Stdout, "[config-api] ", log.LstdFlags)
 
-	repo, err := repositories.New(logger) // new consul repo for configs
+	// For Tracing
+	cfg := configuration.GetConfiguration()
+	ctx := context.Background()
+	exp, err := newExporter(cfg.JaegerAddress)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	tracer := tp.Tracer("alati_projekat")
+
+	repo, err := repositories.New(logger, tracer) // new consul repo for configs
 	if err != nil {
 		logger.Fatal("Failed to create repository:", err)
 	}
 
-	repoCG, err2 := repositories.NewCG(logger) // consul for configGroup
+	repoCG, err2 := repositories.NewCG(logger, tracer) // consul for configGroup
 	if err2 != nil {
 		logger.Fatal("Failed to create repository for configGroup:", err)
 	}
 
-	repoCFG, err3 := repositories.NewCFG(logger)
+	repoCFG, err3 := repositories.NewCFG(logger, tracer)
 	if err3 != nil {
 		logger.Fatal("Failed to create repository for configForGroup:", err3)
 	}
@@ -76,7 +97,7 @@ func main() {
 	params["username"] = "pera"
 	params["password"] = "pera"
 	configs := model.NewConfig("db_config", 2.0, params)
-	err = service.AddConfig(configs.Name, configs.Version, configs.Parameters)
+	err = service.AddConfig(configs.Name, configs.Version, configs.Parameters, ctx)
 	if err != nil {
 		return
 	}
@@ -84,7 +105,7 @@ func main() {
 	var limiter = rate.NewLimiter(0.167, 10) //For testing
 	name := "db_config"
 	version := float32(2.0)
-	config, err := repo.GetConfig(name, version)
+	config, err := repo.GetConfig(name, version, ctx)
 	if err != nil {
 		fmt.Println("Error:", err)
 	} else {
@@ -94,13 +115,14 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
-	idempotencyService := services.NewIdempotencyService(*repo)
-	idempotencyMiddleware := middleware2.NewIdempotency(&idempotencyService)
+	idempotencyService := services.NewIdempotencyService(*repo, tracer)
+	idempotencyMiddleware := middleware2.NewIdempotency(&idempotencyService, tracer)
 	metricsService := services.NewMetricsService()
 	metricsMiddleware := middleware2.NewMetrics(metricsService)
 
 	router := mux.NewRouter()
 	router.StrictSlash(true)
+	router.Use(otelmux.Middleware("alati_projekat"))
 
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware2.AdaptIdempotencyHandler(next, idempotencyMiddleware)
@@ -110,11 +132,11 @@ func main() {
 		return middleware2.AdaptPrometheusHandler(next, metricsMiddleware)
 	})
 
-	server := handlers.NewConfigHandler(logger, service)
+	server := handlers.NewConfigHandler(logger, service, tracer)
 
-	server1 := handlers.NewConfigForGroupHandler(service1)
+	server1 := handlers.NewConfigForGroupHandler(service1, tracer)
 	service2 := services.NewConfigGroupService(repoCG)
-	server2 := handlers.NewConfigGroupHandler(service2)
+	server2 := handlers.NewConfigGroupHandler(service2, tracer)
 
 	router.Handle("/config/", middleware2.RateLimit(limiter, server.CreatePostHandler)).Methods("POST")
 	router.Handle("/config/{name}/{version}/", middleware2.RateLimit(limiter, server.Get)).Methods("GET")
@@ -163,4 +185,31 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println("Server stopped")
+}
+
+func newExporter(address string) (*jaeger.Exporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("alati_projekat"),
+		),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
+	)
 }

@@ -1,9 +1,12 @@
 package repositories
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/consul/api"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
 	"projekat/model"
@@ -12,9 +15,10 @@ import (
 type ConfigGroupConsulRepository struct {
 	cli    *api.Client
 	logger *log.Logger
+	Tracer trace.Tracer
 }
 
-func NewCG(logger *log.Logger) (*ConfigGroupConsulRepository, error) {
+func NewCG(logger *log.Logger, trace trace.Tracer) (*ConfigGroupConsulRepository, error) {
 	db := os.Getenv("DB")
 	dbport := os.Getenv("DBPORT")
 	if db == "" || dbport == "" {
@@ -26,7 +30,7 @@ func NewCG(logger *log.Logger) (*ConfigGroupConsulRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGroupConsulRepository{cli: client, logger: logger}, nil
+	return &ConfigGroupConsulRepository{cli: client, logger: logger, Tracer: trace}, nil
 }
 
 // swagger:route GET /configGroup/{name}/{version}/ getConfigGroup
@@ -36,11 +40,14 @@ func NewCG(logger *log.Logger) (*ConfigGroupConsulRepository, error) {
 //
 //	404: ErrorResponse
 //	200: ResponseConfigGroup
-func (c ConfigGroupConsulRepository) GetConfigGroup(name string, version float32) (*model.ConfigGroup, error) {
+func (c ConfigGroupConsulRepository) GetConfigGroup(name string, version float32, ctx context.Context) (*model.ConfigGroup, error) {
+	_, span := c.Tracer.Start(ctx, "ConfigGroupConsulRepository.GetConfigGroup")
+	defer span.End()
 	kv := c.cli.KV()
 	key := constructKeyForGroup(name, version)
 	pair, _, err := kv.Get(key, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	if pair == nil {
@@ -50,8 +57,11 @@ func (c ConfigGroupConsulRepository) GetConfigGroup(name string, version float32
 	configGroup := &model.ConfigGroup{}
 	err = json.Unmarshal(pair.Value, configGroup)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+
+	span.SetStatus(codes.Ok, "Success getting config group")
 	return configGroup, nil
 
 }
@@ -64,12 +74,16 @@ func (c ConfigGroupConsulRepository) GetConfigGroup(name string, version float32
 //	415: ErrorResponse
 //	400: ErrorResponse
 //	201: ResponseConfigGroup
-func (c ConfigGroupConsulRepository) AddConfigGroup(config *model.ConfigGroup) error {
+func (c ConfigGroupConsulRepository) AddConfigGroup(config *model.ConfigGroup, ctx context.Context) error {
+	_, span := c.Tracer.Start(ctx, "ConfigGroupConsulRepository.AddConfigGroup")
+	defer span.End()
+
 	kv := c.cli.KV()
 	key := constructKeyForGroup(config.Name, config.Version)
 
 	data, err := json.Marshal(config)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	c.logger.Printf("Adding config group with SID: %s, Data: %s\n", key, string(data))
@@ -77,10 +91,12 @@ func (c ConfigGroupConsulRepository) AddConfigGroup(config *model.ConfigGroup) e
 	p := &api.KVPair{Key: key, Value: data}
 	_, err = kv.Put(p, nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		c.logger.Println("Error adding config group:", err)
 		return err
 	}
 	c.logger.Println("Config group added successfully", key)
+	span.SetStatus(codes.Ok, "Config group added successfully")
 	return nil
 
 }
@@ -92,18 +108,22 @@ func (c ConfigGroupConsulRepository) AddConfigGroup(config *model.ConfigGroup) e
 //
 //	404: ErrorResponse
 //	204: NoContentResponse
-func (c ConfigGroupConsulRepository) DeleteConfigGroup(name string, version float32) error {
+func (c ConfigGroupConsulRepository) DeleteConfigGroup(name string, version float32, ctx context.Context) error {
+	_, span := c.Tracer.Start(ctx, "ConfigGroupConsulRepository.DeleteConfigGroup")
+	defer span.End()
 	kv := c.cli.KV()
 	_, err := kv.Delete(constructKeyForGroup(name, version), nil)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		c.logger.Println("Error deleting config group:", err)
 		return err
 	}
 
 	c.logger.Println("Config group deleted successfully", constructKeyForGroup(name, version))
+	span.SetStatus(codes.Ok, "Config group deleted successfully")
 	return nil
 }
 
-func NewConfigGroupConsulRepository() model.ConfigGroupRepository {
-	return ConfigGroupConsulRepository{}
-}
+//func NewConfigGroupConsulRepository() model.ConfigGroupRepository {
+//	return ConfigGroupConsulRepository{}
+//}
