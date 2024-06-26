@@ -41,35 +41,44 @@ func decodeBody(ctx context.Context, r io.Reader) (*model.Config, error) {
 func renderJSON(ctx context.Context, w http.ResponseWriter, v interface{}) {
 	js, err := json.Marshal(v)
 	if err != nil {
+		log.Println("There has been an internal error.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(js)
 	if err != nil {
-		return
+		// Log the error instead of returning it
+		log.Println("Error writing response:", err)
 	}
 }
 
 func (c *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
+	log.Println("Entering Get handler") // Log entry
 
 	ctx, span := c.Tracer.Start(r.Context(), "ConfigHandler.Get")
 	defer span.End()
 
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
+	log.Printf("Received request for config: name=%s, version=%s", name, version) // Log request details
 
 	versionFloat, err := strconv.ParseFloat(version, 64) // ParseFloat returns float64
 	if err != nil {
+		log.Printf("Error parsing version: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "Invalid version number", http.StatusBadRequest)
 		return
 	}
+	log.Printf("Parsed version: %f", versionFloat) // Log parsed version
+
 	// Convert float64 to float32
 	version32 := float32(versionFloat)
+	log.Printf("Converted version to float32: %f", version32) // Log converted version
 
 	config, err := c.Service.GetConfig(name, version32, ctx)
 	if err != nil {
+		log.Printf("Error getting config: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		if strings.Contains(err.Error(), "config not found") {
 			http.Error(w, "Configuration not found", http.StatusNotFound)
@@ -78,41 +87,56 @@ func (c *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	log.Printf("Retrieved config: %+v", config) // Log retrieved config
 
 	renderJSON(ctx, w, config)
 	span.SetStatus(codes.Ok, "")
-
+	log.Println("Successfully processed Get handler") // Log successful completion
 }
 
 func (ch *ConfigHandler) CreatePostHandler(w http.ResponseWriter, req *http.Request) {
-	ctx, span := ch.Tracer.Start(req.Context(), "ConfigHandler.CreateConfiguration")
+	log.Println("Entering Post handler")
+	ctx, span := ch.Tracer.Start(req.Context(), "ConfigHandler.CreatePostHandler")
 	defer span.End()
 
+	// Retrieve Content-Type header and validate media type
 	contentType := req.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
+		log.Printf("Error parsing Content-Type header: %v", err)
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mediaType != "application/json" {
-		span.SetStatus(codes.Error, err.Error())
 		err := errors.New("expect application/json Content-Type")
+		log.Printf("Invalid media type: %s", mediaType)
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
 	}
+
+	// Decode request body into model.Config
 	config, err := decodeBody(req.Context(), req.Body)
 	if err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Printf("Decoded config: %+v", config)
+
+	// Call service to add configuration
 	err = ch.Service.AddConfig(config.Name, config.Version, config.Parameters, ctx)
 	if err != nil {
+		log.Printf("Error adding config: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Render response as JSON
 	renderJSON(ctx, w, config)
 	span.SetStatus(codes.Ok, "")
+	log.Println("Successfully processed CreatePostHandler")
 }
 
 func (ch *ConfigHandler) DelPostHandler(w http.ResponseWriter, req *http.Request) {

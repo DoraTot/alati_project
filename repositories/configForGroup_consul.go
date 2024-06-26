@@ -146,25 +146,44 @@ func (c ConfigForGroupConsulRepository) DeleteConfigsByLabels(groupName string, 
 //	400: ErrorResponse
 //	201: ResponseConfigForGroup
 func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigForGroup, groupName string, groupVersion float32, ctx context.Context) error {
-
 	_, span := c.Tracer.Start(ctx, "ConfigForGroupConsulRepository.AddToConfigGroup")
 	defer span.End()
 
+	if c.cli == nil {
+		err := errors.New("Consul client is nil")
+		log.Printf("Error: %v", err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
 	kv := c.cli.KV()
+	if kv == nil {
+		err := errors.New("KV store is nil")
+		log.Printf("Error: %v", err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
 	groupKey := constructKeyForGroup(groupName, groupVersion)
+	log.Printf("Constructed group key: %s", groupKey) // Log constructed key
 
 	pair, _, err := kv.Get(groupKey, nil)
 	if err != nil {
+		log.Printf("Error getting group from Consul KV: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if pair == nil {
-		return fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
+		err := fmt.Errorf("configuration group '%s' with version %.2f does not exist", groupName, groupVersion)
+		log.Printf("Error: %v", err) // Log error
+		span.SetStatus(codes.Error, err.Error())
+		return err
 	}
 
 	var group model.ConfigGroup
 	err = json.Unmarshal(pair.Value, &group)
 	if err != nil {
+		log.Printf("Error unmarshalling group: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
@@ -179,19 +198,21 @@ func (c ConfigForGroupConsulRepository) AddToConfigGroup(config *model.ConfigFor
 
 	updatedGroupJSON, err := json.Marshal(group)
 	if err != nil {
+		log.Printf("Error marshalling updated group: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	c.logger.Printf("Adding config to config group with SID: %s, Data: %s\n", groupKey, string(updatedGroupJSON))
+	log.Printf("Adding config to config group with SID: %s, Data: %s", groupKey, string(updatedGroupJSON)) // Log data
 
 	p := &api.KVPair{Key: groupKey, Value: updatedGroupJSON}
 	_, err = kv.Put(p, nil)
 	if err != nil {
+		log.Printf("Error putting updated group to Consul KV: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	c.logger.Println("Config successfully added to config group Consul KV:", groupKey)
 
+	log.Printf("Config successfully added to config group Consul KV: %s", groupKey) // Log success
 	span.SetStatus(codes.Ok, "Success adding configuration group")
 	return nil
 }

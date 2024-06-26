@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/consul/api"
 	"go.opentelemetry.io/otel/codes"
@@ -43,22 +44,49 @@ func (c ConfigConsulRepository) GetConfig(name string, version float32, ctx cont
 	_, span := c.Tracer.Start(ctx, "ConfigConsulRepository.GetConfig")
 	defer span.End()
 
-	kv := c.cli.KV()
-	key := constructKey(name, version)
-	pair, _, err := kv.Get(key, nil)
-	if err != nil {
+	if c.cli == nil {
+		err := errors.New("consul client is nil")
+		log.Printf("Error: %v", err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	if pair == nil {
+
+	kv := c.cli.KV()
+	if kv == nil {
+		err := errors.New("KV store is nil")
+		log.Printf("Error: %v", err)
 		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("configuration '%s' with version %.1f not found", name, version)
+		return nil, err
 	}
+
+	key := constructKey(name, version)
+	log.Printf("Constructed key: %s", key) // Log constructed key
+
+	pair, _, err := kv.Get(key, nil)
+	if err != nil {
+		log.Printf("Error getting key from KV store: %v", err) // Log error
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	if pair == nil {
+		err := fmt.Errorf("configuration '%s' with version %.1f not found", name, version)
+		log.Printf("Error: %v", err) // Log error
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	log.Printf("KV pair retrieved: %s", pair.Value) // Log retrieved KV pair
+
 	config := &model.Config{}
 	err = json.Unmarshal(pair.Value, config)
 	if err != nil {
+		log.Printf("Error unmarshalling KV pair value: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+
+	log.Printf("Config unmarshalled: %+v", config) // Log unmarshalled config
 
 	span.SetStatus(codes.Ok, "Success getting configuration")
 	return config, nil
@@ -74,25 +102,44 @@ func (c ConfigConsulRepository) GetConfig(name string, version float32, ctx cont
 //	201: ResponseConfig
 func (c ConfigConsulRepository) AddConfig(config *model.Config, ctx context.Context) error {
 	_, span := c.Tracer.Start(ctx, "ConfigConsulRepository.AddConfig")
-	kv := c.cli.KV()
-	key := constructKey(config.Name, config.Version)
+	defer span.End()
 
-	data, err := json.Marshal(config)
-	if err != nil {
+	if c.cli == nil {
+		err := errors.New("Consul client is nil")
+		log.Printf("Error: %v", err)
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	c.logger.Printf("Adding config with SID: %s, Data: %s\n", key, string(data))
+
+	kv := c.cli.KV()
+	if kv == nil {
+		err := errors.New("KV store is nil")
+		log.Printf("Error: %v", err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	key := constructKey(config.Name, config.Version)
+	log.Printf("Constructed key: %s", key) // Log constructed key
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		log.Printf("Error marshalling config: %v", err) // Log error
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	log.Printf("Adding config with SID: %s, Data: %s", key, string(data)) // Log data
 
 	p := &api.KVPair{Key: key, Value: data}
 	_, err = kv.Put(p, nil)
 	if err != nil {
+		log.Printf("Error putting config to Consul KV: %v", err) // Log error
 		span.SetStatus(codes.Error, err.Error())
-		c.logger.Println("Error putting config to Consul KV:", err)
 		return err
 	}
-	c.logger.Println("Config successfully added to Consul KV:", key)
-	span.SetStatus(codes.Ok, "Success getting configuration")
+
+	log.Printf("Config successfully added to Consul KV: %s", key) // Log success
+	span.SetStatus(codes.Ok, "Config successfully added")
 	return nil
 }
 
@@ -129,8 +176,9 @@ func (cr *ConfigConsulRepository) GetIdempotencyRequestByKey(key string, ctx con
 		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
+
 	if data == nil {
-		span.SetStatus(codes.Error, err.Error())
+		span.SetStatus(codes.Error, "Idempotency request not found") // Set appropriate status message
 		return false, nil
 	}
 

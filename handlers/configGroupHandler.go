@@ -29,7 +29,7 @@ func NewConfigGroupHandler(service services.ConfigGroupService, tracer trace.Tra
 }
 
 func (ch *ConfigGroupHandler) CreateConfigGroup(w http.ResponseWriter, req *http.Request) {
-
+	log.Println("Entered CreateConfigGroup")
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigGroupHandler.CreateConfigGroup")
 	defer span.End()
 
