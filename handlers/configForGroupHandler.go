@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"projekat/model"
@@ -76,6 +77,22 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.AddToConfigGroup")
 	defer span.End()
 
+	vars := mux.Vars(req)
+	groupName := vars["groupName"]
+	groupVersionStr := vars["groupVersion"]
+
+	log.Printf("The version for configGroup is %s", groupVersionStr)
+
+	// Debugging: Print vars to see what's actually captured
+	log.Printf("Vars: %+v", vars)
+
+	groupVersion, err := strconv.ParseFloat(groupVersionStr, 32)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, "invalid groupVersion", http.StatusBadRequest)
+		return
+	}
+
 	contentType := req.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
@@ -98,7 +115,8 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 		return
 	}
 
-	err = ch.Service.AddToConfigGroup(addToGroupReq.ConfigForGroup.Name, addToGroupReq.ConfigForGroup.Labels, addToGroupReq.ConfigForGroup.Parameters, addToGroupReq.ConfigGroup.Name, addToGroupReq.ConfigGroup.Version, ctx)
+	// Assuming addToGroupReq.ConfigForGroup is of type model.ConfigForGroup
+	err = ch.Service.AddToConfigGroup(addToGroupReq.ConfigForGroup.Name, addToGroupReq.ConfigForGroup.Labels, addToGroupReq.ConfigForGroup.Parameters, groupName, float32(groupVersion), ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "Failed to add configuration to configuration group: "+err.Error(), http.StatusInternalServerError)
@@ -140,20 +158,25 @@ func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *
 	ctx, span := ch.Tracer.Start(req.Context(), "ConfigForGroupHandler.GetConfigsByLabels")
 	defer span.End()
 
-	groupName := mux.Vars(req)["groupName"]
-	groupVersion := mux.Vars(req)["groupVersion"]
-	labels := mux.Vars(req)["labels"]
+	vars := mux.Vars(req)
+	groupName := vars["groupName"]
+	groupVersionStr := vars["groupVersion"]
+	labelsStr := vars["labels"]
 
-	versionFloat1, err := strconv.ParseFloat(groupVersion, 64)
+	log.Printf("groupName: %s, groupVersion: %s, labels: %s", groupName, groupVersionStr, labelsStr)
+
+	// Parse groupVersion from string to float32
+	groupVersion, err := strconv.ParseFloat(groupVersionStr, 32)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "invalid groupVersion", http.StatusBadRequest)
 		return
 	}
-	groupVersion32 := float32(versionFloat1)
+	groupVersion32 := float32(groupVersion)
 
+	// Parse labels from string to map[string]string
 	labelMap := make(map[string]string)
-	for _, label := range strings.Split(labels, ",") {
+	for _, label := range strings.Split(labelsStr, ",") {
 		parts := strings.SplitN(label, ":", 2)
 		if len(parts) == 2 {
 			labelMap[parts[0]] = parts[1]
@@ -168,6 +191,7 @@ func (ch *ConfigForGroupHandler) GetConfigsByLabels(w http.ResponseWriter, req *
 		return
 	}
 
+	// Prepare response
 	configMap := make(map[string]interface{})
 	for _, config := range configs {
 		configMap[config.Name] = config

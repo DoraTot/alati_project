@@ -145,7 +145,7 @@ func main() {
 	router.Handle("/configGroup/", middleware2.RateLimit(limiter, server2.CreateConfigGroup)).Methods("POST")
 	router.Handle("/configGroup/{name}/{version}/", middleware2.RateLimit(limiter, server2.GetConfigGroup)).Methods("GET")
 	router.Handle("/configGroup/{name}/{version}/", middleware2.RateLimit(limiter, server2.DeleteConfigGroup)).Methods("DELETE")
-	router.Handle("/config/configGroup/", middleware2.RateLimit(limiter, server1.AddToConfigGroup)).Methods("POST")
+	router.Handle("/config/configGroup/{groupName}/{groupVersion}/", middleware2.RateLimit(limiter, server1.AddToConfigGroup)).Methods("POST")
 	router.Handle("/config/{name}/{groupName}/{groupVersion}/", middleware2.RateLimit(limiter, server1.DeleteFromConfigGroup)).Methods("DELETE")
 
 	router.Handle("/configGroup/{groupName}/{groupVersion}/{labels}", middleware2.RateLimit(limiter, server1.DeleteConfigsByLabels)).Methods("DELETE")
