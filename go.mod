@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/consul/api v1.28.3
 	github.com/prometheus/client_golang v1.19.1
+	github.com/rs/cors v1.11.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.52.0
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0

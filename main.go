@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -161,10 +162,18 @@ func main() {
 
 	router.Handle("/metrics", metricsMiddleware.MetricsHandler()).Methods("GET")
 
+	// CORS
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	})
+
 	// start server
 	srv := &http.Server{
 		Addr:    "0.0.0.0:" + port,
-		Handler: router,
+		Handler: corsHandler.Handler(router),
 	}
 
 	go func() {
