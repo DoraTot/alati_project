@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -27,7 +28,7 @@ type AddConfigToGroupRequest struct {
 		Name       string            `json:"name"`
 		Labels     map[string]string `json:"labels"`
 		Parameters map[string]string `json:"parameters"`
-	} `json:"config"`
+	}
 	ConfigGroup struct {
 		Name           string                 `json:"name"`
 		Version        float32                `json:"version"`
@@ -83,9 +84,6 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 
 	log.Printf("The version for configGroup is %s", groupVersionStr)
 
-	// Debugging: Print vars to see what's actually captured
-	log.Printf("Vars: %+v", vars)
-
 	groupVersion, err := strconv.ParseFloat(groupVersionStr, 32)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -106,6 +104,20 @@ func (ch *ConfigForGroupHandler) AddToConfigGroup(w http.ResponseWriter, req *ht
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
 	}
+
+	// Read the entire request body
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, "failed to read request body: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Add the wrapper around the JSON payload
+	wrappedBody := []byte(`{"configForGroup":` + string(body) + `}`)
+
+	// Create a new request with the wrapped body
+	req.Body = io.NopCloser(bytes.NewReader(wrappedBody))
 
 	var addToGroupReq AddConfigToGroupRequest
 	err = json.NewDecoder(req.Body).Decode(&addToGroupReq)

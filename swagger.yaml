@@ -305,10 +305,10 @@ definitions:
         type: "number"
         format: "float"
         description: "Version of the Config Group"
-      configs:
+      configurations:
         type: "array"
         items:
-          $ref: "#/definitions/Config"
+          $ref: "#/definitions/ConfigForGroup"
   ConfigForGroup:
     type: "object"
     required:
