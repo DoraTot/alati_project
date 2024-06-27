@@ -25,5 +25,5 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/ars_repo:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/alati_project:latest
       
