@@ -5,27 +5,39 @@ on:
     branches:
       - main
 jobs:
-  docker:
+  build:
+    strategy:
+      matrix:
+        go-version: ['1.22.2']
     runs-on: ubuntu-latest
     steps:
       -
         name: Checkout
-        uses: docker/setup-qemu-action@v2
+        uses: actions/checkout@v4
       -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      -
+        name: Running unit tests
+        run: go test ./tests/
       -
         name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
-          context: ./docker
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       -
-        name: Build and push
-        uses: docker/build-push-action@v3
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      -
+        name: Build and Push
+        uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ars_repo:latest
-      
+          tags: ${{ secrets.DOCKER_USERNAME }}/ars_repo:latest
