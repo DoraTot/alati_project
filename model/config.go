@@ -26,7 +26,12 @@ func NewConfig(name string, version float32, parameters map[string]string) *Conf
 }
 
 type ConfigRepository interface {
+	//GetConfig(name string, version float32, ctx context.Context) (*Config, error)
+	//AddConfig(config *Config, ctx context.Context) error
+	//DeleteConfig(name string, version float32, ctx context.Context) error
+
+	Hello()
+	AddConfig(name string, version float32, parameters map[string]string, ctx context.Context) error
 	GetConfig(name string, version float32, ctx context.Context) (*Config, error)
-	AddConfig(config *Config, ctx context.Context) error
 	DeleteConfig(name string, version float32, ctx context.Context) error
 }
