@@ -40,4 +40,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/ars_repo:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/alati_project:latest
