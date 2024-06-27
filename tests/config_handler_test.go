@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"projekat/services"
 	"strconv"
 	"testing"
 
@@ -19,12 +20,12 @@ import (
 // Ensure MockConfigService implements services.ConfigServiceInterface
 var _ model.ConfigRepository = (*MockConfigService)(nil)
 
-// TestGetHandler tests the Get handler
 func TestGetHandler(t *testing.T) {
 	tracer := otel.Tracer("test-tracer")
-	mockService := new(MockConfigService)
+	mockRepo := new(MockConfigService)
+	service := services.NewConfigService(mockRepo)
 	handler := &handlers.ConfigHandler{
-		Service: mockService,
+		Service: service,
 		Tracer:  tracer,
 	}
 
@@ -41,8 +42,8 @@ func TestGetHandler(t *testing.T) {
 		Version: version32,
 	}
 
-	// Mock the service response
-	mockService.On("GetConfig", name, version32, mock.Anything).Return(config, nil)
+	// Mock the repository response
+	mockRepo.On("GetConfig", name, version32, mock.Anything).Return(config, nil)
 
 	req, err := http.NewRequest("GET", "/config/"+name+"/"+version+"/", nil)
 	require.NoError(t, err)
@@ -57,6 +58,6 @@ func TestGetHandler(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, config, &responseConfig)
 
-	// Verify that the service's GetConfig method was called with the expected parameters
-	mockService.AssertCalled(t, "GetConfig", name, version32, mock.Anything)
+	// Verify that the repository's GetConfig method was called with the expected parameters
+	mockRepo.AssertCalled(t, "GetConfig", name, version32, mock.Anything)
 }

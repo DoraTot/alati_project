@@ -1,11 +1,10 @@
-// tests/mock_config_service.go
+// In your tests package (e.g., tests/mock_config_service.go)
 package tests
 
 import (
 	"context"
 	"github.com/stretchr/testify/mock"
 	"projekat/model"
-	"projekat/services"
 )
 
 type MockConfigService struct {
@@ -33,6 +32,3 @@ func (m *MockConfigService) DeleteConfig(name string, version float32, ctx conte
 	args := m.Called(name, version, ctx)
 	return args.Error(0)
 }
-
-// Ensure MockConfigService implements services.ConfigServiceInterface
-var _ services.ConfigServiceInterface = (*MockConfigService)(nil)
