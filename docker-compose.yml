@@ -15,6 +15,8 @@ services:
       - DB=consul
       - DBHOST=consul
       - DBPORT=8500
+      - JAEGER_ADDRESS=http://jaeger:14268/api/traces
+      - SERVICE_ADDRESS=http://server:8000
     depends_on:
       - consul
       - tracing
@@ -56,8 +58,10 @@ services:
     ports:
       - "6831:6831/udp"
       - "16686:16686"
+      - "14268:14268"
+      - "4318:4318"
     environment:
-      - JAEGER_ADDRESS=http://jaeger:14268/api/traces
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
 
 
 

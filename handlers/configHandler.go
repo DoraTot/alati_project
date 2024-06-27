@@ -135,8 +135,8 @@ func (ch *ConfigHandler) CreatePostHandler(w http.ResponseWriter, req *http.Requ
 
 	// Render response as JSON
 	renderJSON(ctx, w, config)
-	span.SetStatus(codes.Ok, "")
 	log.Println("Successfully processed CreatePostHandler")
+	span.SetStatus(codes.Ok, "")
 }
 
 func (ch *ConfigHandler) DelPostHandler(w http.ResponseWriter, req *http.Request) {

@@ -26,8 +26,8 @@ func RateLimit(limiter *rate.Limiter, next func(w http.ResponseWriter, r *http.R
 
 func SwaggerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, DELETE, POST, PUT")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key, Allow")
 
 	// Handle preflight requests
 	if r.Method == "OPTIONS" {

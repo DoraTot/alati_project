@@ -212,9 +212,8 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 			semconv.ServiceNameKey.String("alati_projekat"),
 		),
 	)
-
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create resource: %v", err)
 	}
 
 	return sdktrace.NewTracerProvider(
