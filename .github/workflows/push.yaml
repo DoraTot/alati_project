@@ -2,7 +2,7 @@ name : c i
 on :
 push :
 b r a n c h e s :
-− ’master ’
+− ’main ’
 jobs :
 d o c k e r :
 r u n s−on : ubuntu−l a t e s t
